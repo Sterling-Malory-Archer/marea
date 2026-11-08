@@ -16,7 +16,8 @@ beforeAll(async () => {
 
 const inv = () => db.inventory.findUniqueOrThrow({ where: { variantId } });
 
-describe("inventory", () => {
+// One stateful scenario: steps build on each other, so they must run in order.
+describe("inventory", { shuffle: false }, () => {
   it("adjusts and sets stock through the admin API with a ledger entry", async () => {
     const r1 = await agent.post(`/api/admin/variants/${variantId}/inventory`).send({ delta: 5, reason: "RESTOCK", note: "Delivery 114" });
     expect(r1.status).toBe(200);

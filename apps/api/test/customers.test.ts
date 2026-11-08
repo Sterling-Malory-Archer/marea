@@ -1,6 +1,6 @@
 import supertest from "supertest";
 import { describe, expect, it } from "vitest";
-import { app, db, mailer, ORIGIN, unique } from "./helpers.js";
+import { app, db, ids, loginAs, mailer, ORIGIN, unique } from "./helpers.js";
 
 const agent = () => supertest.agent(app).set("Origin", ORIGIN);
 const newEmail = () => `${unique("cust")}@test.local`;
@@ -140,9 +140,18 @@ describe("account", () => {
 
 describe("wishlist", () => {
   it("saves, merges and removes products", async () => {
+    // Own fixtures: CI runs test files in any order against an empty database.
+    const { agent: admin } = await loginAs("CATALOG_MANAGER");
+    const ref = await ids();
+    const products: { id: number }[] = [];
+    for (let i = 0; i < 2; i++) {
+      const p = (await admin.post("/api/admin/products").send({ reference: unique("WL-"), title: "Wish", sizeScaleId: ref.oneSize.id, primaryCategoryId: ref.coats.id, priceMinor: 1000 }).expect(201)).body;
+      await admin.post(`/api/admin/products/${p.id}/variants`).send({ colorId: ref.colors[0]!.id, sizeId: ref.oneSize.sizes[0]!.id, initialQuantity: 1 }).expect(201);
+      await db.productImage.create({ data: { productId: p.id, storageKey: `placeholder/${p.id}`, isPlaceholder: true } });
+      await admin.post(`/api/admin/products/${p.id}/publish`).expect(200);
+      products.push(p);
+    }
     const { a } = await register();
-    const products = await db.product.findMany({ where: { status: "ACTIVE" }, take: 3, select: { id: true } });
-    expect(products.length).toBeGreaterThanOrEqual(2);
     expect((await a.put(`/api/account/wishlist/${products[0]!.id}`)).status).toBe(204);
     const merged = await a.post("/api/account/wishlist/merge").send({ productIds: [products[0]!.id, products[1]!.id, 99999999] });
     expect(merged.body.productIds.sort()).toEqual([products[0]!.id, products[1]!.id].sort());

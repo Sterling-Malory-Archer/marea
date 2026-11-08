@@ -28,9 +28,9 @@ jobs:
       MEDIA_PUBLIC_BASE_URL: http://localhost:4000/media
       COOKIE_SECRET: ci-only-cookie-secret-not-used-anywhere-else-0123456789
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
       - uses: pnpm/action-setup@v4
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-node@v5
         with:
           node-version: 22
           cache: pnpm
