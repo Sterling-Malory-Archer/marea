@@ -5,7 +5,7 @@
 | 1 | Foundation, MySQL connection, structure, CI | ✅ Done (Abacus checks open — see DEPLOYMENT.md) |
 | 2 | Schema, migrations, seeds, product administration (API) | ✅ Done |
 | 3 | Design system, header/nav, announcement bar, homepage | ✅ Done |
-| 4 | Catalogue pages, filters, search, product detail, variants UI | Next |
+| 4 | Bilingual routing (EN / Montenegrin), catalogue pages, filters, search, product detail, variants UI | Next |
 | 5 | Customer accounts, auth, cart, wishlist (DB-backed) | |
 | 6 | Checkout, orders, inventory reservations | |
 | 7 | Payment provider + webhooks | Needs merchant account (see below) |
@@ -51,3 +51,12 @@ pages are built in Phases 4–8.
 Card payments need a merchant account. The brief suggests **Monri** or **AllSecure**; their availability for the business's country of registration still has to be confirmed with each provider.
 Needed from the provider once approved: test + live merchant credentials, webhook signing secret, supported
 currencies (EUR), refund API access. Until then the footer lists only cash on delivery.
+
+## Decisions log
+
+| Date | Decision |
+|---|---|
+| 2026-11-08 | Working store name **MAREA** kept for now (one setting to change later). |
+| 2026-11-08 | Business country: **Montenegro** — EUR, 21% VAT (VAT-inclusive prices), Montenegro as the primary delivery zone. |
+| 2026-11-08 | Storefront languages: **English and Montenegrin**. Plan for Phase 4: locale-prefixed URLs (`/en/…`, `/me/…`) with `hreflang` alternates; translation tables for product, category, collection and homepage content (`*_translations`, one row per locale) so every text field the admin edits exists in both languages; UI strings in typed message files; prices and dates formatted per locale. Montenegrin uses Latin script (č, ć, š, ž, đ — covered by the bundled font subsets). |
+| 2026-11-08 | Abacus environment not yet provisioned; deployment target stays portable (Node 22 + MySQL 8). |
