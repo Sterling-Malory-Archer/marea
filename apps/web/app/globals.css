@@ -1,0 +1,160 @@
+@import "tailwindcss";
+
+/* ── Design tokens ─────────────────────────────────────────────────────────
+   Palette from the brief. Accent burgundy is reserved for sale prices, the
+   active state and key actions — never for decoration. */
+@theme {
+  --color-paper: #f8f7f4;
+  --color-ink: #202020;
+  --color-mute: #777777;
+  --color-sand: #eeece7;
+  --color-line: #e5e2dc;
+  --color-claret: #713b43;
+  --color-white: #ffffff;
+
+  --font-display: "Bodoni Moda Variable", "Bodoni 72", "Didot", Georgia, serif;
+  --font-sans: "Jost Variable", "Futura", "Helvetica Neue", Arial, sans-serif;
+
+  /* Type scale (≈1.25 ratio for UI, display sizes fluid) */
+  --text-micro: 0.6875rem;
+  --text-micro--line-height: 1rem;
+  --text-small: 0.8125rem;
+  --text-small--line-height: 1.25rem;
+  --text-body: 0.9375rem;
+  --text-body--line-height: 1.6rem;
+  --text-lead: 1.0625rem;
+  --text-lead--line-height: 1.75rem;
+
+  --radius-hair: 2px;
+  --ease-out-soft: cubic-bezier(0.2, 0.7, 0.2, 1);
+  --breakpoint-xs: 26rem;
+}
+
+@keyframes fade {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@layer base {
+  html {
+    background: var(--color-paper);
+    color: var(--color-ink);
+    font-family: var(--font-sans);
+    font-size: 100%;
+    -webkit-font-smoothing: antialiased;
+    text-rendering: optimizeLegibility;
+  }
+  body {
+    font-size: var(--text-body);
+    line-height: var(--text-body--line-height);
+    font-weight: 400;
+  }
+  ::selection {
+    background: var(--color-claret);
+    color: var(--color-white);
+  }
+  :focus-visible {
+    outline: 1.5px solid var(--color-ink);
+    outline-offset: 3px;
+  }
+  @media (prefers-reduced-motion: reduce) {
+    *,
+    *::before,
+    *::after {
+      animation-duration: 0.01ms !important;
+      transition-duration: 0.01ms !important;
+      scroll-behavior: auto !important;
+    }
+  }
+}
+
+@layer components {
+  /* Page gutters shared by every section so edges line up down the page. */
+  .shell {
+    margin-inline: auto;
+    width: 100%;
+    max-width: 96rem;
+    padding-inline: 1.25rem;
+  }
+  @media (min-width: 48rem) {
+    .shell {
+      padding-inline: 2.5rem;
+    }
+  }
+  @media (min-width: 80rem) {
+    .shell {
+      padding-inline: 4rem;
+    }
+  }
+
+  /* Display type: high-contrast Didone, tight leading, optical size maxed. */
+  .display {
+    font-family: var(--font-display);
+    font-weight: 400;
+    letter-spacing: -0.015em;
+    line-height: 0.98;
+    /* Let Bodoni pick its optical size from the font size: hairlines stay intact at 28px and sing at 110px. */
+    font-optical-sizing: auto;
+  }
+
+  /* Wordmark: Bodoni at its small optical size so hairlines hold up at 22–28px. */
+  .wordmark {
+    font-family: var(--font-display);
+    font-weight: 500;
+    letter-spacing: 0.34em;
+    line-height: 1;
+    font-variation-settings: "opsz" 11;
+    margin-right: -0.34em;
+  }
+
+  .btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.6rem;
+    min-height: 2.75rem;
+    padding: 0 1.5rem;
+    font-size: var(--text-small);
+    font-weight: 500;
+    letter-spacing: 0.04em;
+    border: 1px solid var(--color-ink);
+    border-radius: var(--radius-hair);
+    transition: background-color 0.25s var(--ease-out-soft), color 0.25s var(--ease-out-soft);
+  }
+  .btn-outline:hover {
+    background: var(--color-ink);
+    color: var(--color-paper);
+  }
+  .btn-solid {
+    background: var(--color-ink);
+    color: var(--color-paper);
+  }
+  .btn-solid:hover {
+    background: var(--color-claret);
+    border-color: var(--color-claret);
+  }
+
+  .link-underline {
+    background-image: linear-gradient(currentColor, currentColor);
+    background-size: 100% 1px;
+    background-position: 0 100%;
+    background-repeat: no-repeat;
+    padding-bottom: 2px;
+    transition: background-size 0.3s var(--ease-out-soft);
+  }
+  .link-underline:hover {
+    background-size: 0% 1px;
+    background-position: 100% 100%;
+  }
+
+  /* Clearly-identified temporary placeholder for photography. */
+  .placeholder-photo {
+    position: relative;
+    background-color: var(--ph-tint, var(--color-sand));
+    background-image: repeating-linear-gradient(
+      135deg,
+      rgb(0 0 0 / 0.035) 0 1px,
+      transparent 1px 14px
+    );
+  }
+}

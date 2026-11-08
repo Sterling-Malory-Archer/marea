@@ -1,0 +1,39 @@
+{
+  "name": "@marea/api",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "tsx watch --env-file-if-exists=../../.env src/server.ts",
+    "build": "tsc -p tsconfig.build.json",
+    "start": "node dist/server.js",
+    "typecheck": "tsc -p tsconfig.json --noEmit",
+    "test": "vitest run"
+  },
+  "dependencies": {
+    "@aws-sdk/client-s3": "3.1164.0",
+    "@marea/db": "workspace:*",
+    "@node-rs/argon2": "2.2.2",
+    "cookie-parser": "1.4.7",
+    "express": "5.3.0",
+    "express-rate-limit": "8.7.3",
+    "helmet": "8.3.0",
+    "multer": "2.5.0",
+    "pino": "10.4.0",
+    "pino-http": "11.0.0",
+    "sharp": "0.35.5",
+    "zod": "4.6.7"
+  },
+  "devDependencies": {
+    "@types/cookie-parser": "^1.4.9",
+    "@types/express": "^5.0.5",
+    "@types/multer": "^2.0.0",
+    "@types/node": "^22.19.0",
+    "@types/supertest": "^6.0.3",
+    "dotenv": "^17.4.2",
+    "supertest": "7.3.2",
+    "tsx": "4.23.15",
+    "typescript": "5.9.3",
+    "vitest": "5.1.0"
+  }
+}

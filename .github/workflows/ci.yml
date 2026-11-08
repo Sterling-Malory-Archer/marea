@@ -1,0 +1,50 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    services:
+      mysql:
+        image: mysql:8.0
+        env:
+          MYSQL_ROOT_PASSWORD: root
+          MYSQL_DATABASE: marea_test
+          MYSQL_USER: marea
+          MYSQL_PASSWORD: marea
+        ports: ["3306:3306"]
+        options: >-
+          --health-cmd="mysqladmin ping -h 127.0.0.1"
+          --health-interval=5s --health-retries=20
+    env:
+      DATABASE_URL: mysql://marea:marea@127.0.0.1:3306/marea_ci
+      TEST_DATABASE_URL: mysql://marea:marea@127.0.0.1:3306/marea_test
+      SHADOW_DATABASE_URL: mysql://root:root@127.0.0.1:3306/marea_shadow
+      PUBLIC_WEB_URL: http://localhost:3000
+      MEDIA_PUBLIC_BASE_URL: http://localhost:4000/media
+      COOKIE_SECRET: ci-only-cookie-secret-not-used-anywhere-else-0123456789
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - name: Create shadow database
+        run: mysql -h 127.0.0.1 -uroot -proot -e "CREATE DATABASE IF NOT EXISTS marea_shadow"
+      - run: pnpm --filter @marea/db build
+      - name: Migrations match schema (no drift)
+        working-directory: packages/db
+        run: npx prisma migrate diff --from-migrations prisma/migrations --to-schema prisma/schema.prisma --exit-code
+      - run: pnpm typecheck
+      - run: pnpm test
+      - run: pnpm --filter @marea/api build
+      - run: pnpm --filter @marea/web build
+        env:
+          API_INTERNAL_URL: http://127.0.0.1:4000
+          NEXT_PUBLIC_SITE_URL: http://localhost:3000

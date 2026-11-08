@@ -1,0 +1,1011 @@
+// ─────────────────────────────────────────────────────────────────────────────
+// MAREA — MySQL 8.x / InnoDB schema
+//
+// Conventions
+//  • Table names are snake_case plural (@@map). Columns are camelCase.
+//  • All money is stored as integer MINOR units (cents) in `*Minor` columns
+//    with an explicit ISO-4217 `currency`. No floats anywhere near money.
+//  • Every purchasable thing is a ProductVariant (one colour × one size) with
+//    its own SKU and its own Inventory row.
+//  • Orders/OrderItems snapshot everything shown to the customer at purchase
+//    time, so later product edits or deletions never rewrite order history.
+// ─────────────────────────────────────────────────────────────────────────────
+
+generator client {
+  provider               = "prisma-client"
+  output                 = "../src/generated/prisma"
+  moduleFormat           = "esm"
+  importFileExtension    = "js"
+}
+
+datasource db {
+  provider = "mysql"
+}
+
+// ═════════════════════════════ Identity & access ════════════════════════════
+
+enum UserRole {
+  CUSTOMER
+  CONTENT_EDITOR   // homepage, banners, announcements
+  CATALOG_MANAGER  // products, brands, categories, inventory
+  ORDER_MANAGER    // orders, shipments, customers (read)
+  ADMIN            // everything except managing other admins' roles
+  OWNER            // everything
+}
+
+enum UserStatus {
+  ACTIVE
+  DISABLED
+  DELETION_REQUESTED
+}
+
+model User {
+  id                  Int        @id @default(autoincrement())
+  email               String     @unique @db.VarChar(254)
+  passwordHash        String     @db.VarChar(255)
+  firstName           String?    @db.VarChar(100)
+  lastName            String?    @db.VarChar(100)
+  phone               String?    @db.VarChar(40)
+  role                UserRole   @default(CUSTOMER)
+  status              UserStatus @default(ACTIVE)
+  emailVerifiedAt     DateTime?
+  marketingOptIn      Boolean    @default(false)
+  deletionRequestedAt DateTime?
+  lastLoginAt         DateTime?
+  failedLoginCount    Int        @default(0)
+  lockedUntil         DateTime?
+  createdAt           DateTime   @default(now())
+  updatedAt           DateTime   @updatedAt
+
+  sessions       Session[]
+  emailTokens    EmailToken[]
+  addresses      Address[]
+  carts          Cart[]
+  wishlist       Wishlist?
+  orders         Order[]
+  reviews        ProductReview[]
+  redemptions    CouponRedemption[]
+  auditEntries   AdminAuditLog[]
+  inventoryMoves InventoryMovement[]
+
+  @@index([role])
+  @@index([status])
+  @@map("users")
+}
+
+/// Opaque server-side sessions. Only a SHA-256 hash of the cookie token is stored.
+model Session {
+  id         Int      @id @default(autoincrement())
+  tokenHash  String   @unique @db.Char(64)
+  userId     Int
+  isAdmin    Boolean  @default(false)
+  ipAddress  String?  @db.VarChar(45)
+  userAgent  String?  @db.VarChar(255)
+  expiresAt  DateTime
+  lastSeenAt DateTime @default(now())
+  createdAt  DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([expiresAt])
+  @@map("sessions")
+}
+
+enum EmailTokenType {
+  VERIFY_EMAIL
+  RESET_PASSWORD
+}
+
+model EmailToken {
+  id        Int            @id @default(autoincrement())
+  userId    Int
+  type      EmailTokenType
+  tokenHash String         @unique @db.Char(64)
+  expiresAt DateTime
+  usedAt    DateTime?
+  createdAt DateTime       @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, type])
+  @@map("email_tokens")
+}
+
+model Address {
+  id                Int      @id @default(autoincrement())
+  userId            Int
+  label             String?  @db.VarChar(60)
+  firstName         String   @db.VarChar(100)
+  lastName          String   @db.VarChar(100)
+  company           String?  @db.VarChar(150)
+  line1             String   @db.VarChar(200)
+  line2             String?  @db.VarChar(200)
+  city              String   @db.VarChar(100)
+  postalCode        String   @db.VarChar(20)
+  region            String?  @db.VarChar(100)
+  countryCode       String   @db.Char(2)
+  phone             String?  @db.VarChar(40)
+  isDefaultShipping Boolean  @default(false)
+  isDefaultBilling  Boolean  @default(false)
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@map("addresses")
+}
+
+// ═════════════════════════════════ Catalogue ════════════════════════════════
+
+model Brand {
+  id             Int      @id @default(autoincrement())
+  name           String   @unique @db.VarChar(120)
+  slug           String   @unique @db.VarChar(140)
+  description    String?  @db.Text
+  logoKey        String?  @db.VarChar(512)
+  isActive       Boolean  @default(true)
+  sortOrder      Int      @default(0)
+  seoTitle       String?  @db.VarChar(160)
+  seoDescription String?  @db.VarChar(320)
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  products Product[]
+
+  @@map("brands")
+}
+
+/// Hierarchical categories (adjacency list). `path` is the full URL path,
+/// e.g. "women/dresses", kept in sync by the API whenever slugs or parents change.
+model Category {
+  id             Int      @id @default(autoincrement())
+  parentId       Int?
+  name           String   @db.VarChar(120)
+  slug           String   @db.VarChar(140)
+  path           String   @unique @db.VarChar(500)
+  depth          Int      @default(0)
+  description    String?  @db.Text
+  imageKey       String?  @db.VarChar(512)
+  isActive       Boolean  @default(true)
+  showInNav      Boolean  @default(true)
+  sortOrder      Int      @default(0)
+  seoTitle       String?  @db.VarChar(160)
+  seoDescription String?  @db.VarChar(320)
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  parent          Category?         @relation("CategoryTree", fields: [parentId], references: [id], onDelete: Restrict)
+  children        Category[]        @relation("CategoryTree")
+  products        ProductCategory[]
+  primaryProducts Product[]         @relation("PrimaryCategory")
+
+  @@unique([parentId, slug])
+  @@index([parentId, sortOrder])
+  @@map("categories")
+}
+
+/// A size system, e.g. "Clothing (XS–XXL)", "EU footwear", "Numeric (IT)", "One size".
+model SizeScale {
+  id        Int      @id @default(autoincrement())
+  name      String   @unique @db.VarChar(80)
+  code      String   @unique @db.VarChar(40)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  sizes    Size[]
+  products Product[]
+
+  @@map("size_scales")
+}
+
+model Size {
+  id          Int    @id @default(autoincrement())
+  sizeScaleId Int
+  label       String @db.VarChar(20)
+  sortOrder   Int    @default(0)
+
+  scale    SizeScale        @relation(fields: [sizeScaleId], references: [id], onDelete: Restrict)
+  variants ProductVariant[]
+
+  @@unique([sizeScaleId, label])
+  @@index([sizeScaleId, sortOrder])
+  @@map("sizes")
+}
+
+model Color {
+  id        Int      @id @default(autoincrement())
+  name      String   @unique @db.VarChar(60)
+  slug      String   @unique @db.VarChar(80)
+  hex       String   @db.Char(7)
+  sortOrder Int      @default(0)
+  createdAt DateTime @default(now())
+
+  variants ProductVariant[]
+  images   ProductImage[]
+
+  @@map("colors")
+}
+
+enum ProductStatus {
+  DRAFT
+  ACTIVE
+  ARCHIVED
+}
+
+model Product {
+  id                  Int           @id @default(autoincrement())
+  /// Style reference shown on the PDP, e.g. "MR-COAT-0142". Variant SKUs extend it.
+  reference           String        @unique @db.VarChar(64)
+  slug                String        @unique @db.VarChar(200)
+  title               String        @db.VarChar(200)
+  subtitle            String?       @db.VarChar(200)
+  description         String?       @db.Text
+  composition         String?       @db.Text
+  care                String?       @db.Text
+  brandId             Int?
+  primaryCategoryId   Int?
+  sizeScaleId         Int
+  status              ProductStatus @default(DRAFT)
+  currency            String        @default("EUR") @db.Char(3)
+  /// Selling price in minor units, VAT included.
+  priceMinor          Int
+  /// Original price when on sale (must be > priceMinor). Null = not discounted.
+  compareAtPriceMinor Int?
+  /// Denormalised flag, maintained by the API, used for fast "Sale" filtering.
+  isOnSale            Boolean       @default(false)
+  isNewArrival        Boolean       @default(false)
+  publishedAt         DateTime?
+  seoTitle            String?       @db.VarChar(160)
+  seoDescription      String?       @db.VarChar(320)
+  createdAt           DateTime      @default(now())
+  updatedAt           DateTime      @updatedAt
+
+  brand           Brand?              @relation(fields: [brandId], references: [id], onDelete: SetNull)
+  primaryCategory Category?           @relation("PrimaryCategory", fields: [primaryCategoryId], references: [id], onDelete: SetNull)
+  sizeScale       SizeScale           @relation(fields: [sizeScaleId], references: [id], onDelete: Restrict)
+  categories      ProductCategory[]
+  variants        ProductVariant[]
+  images          ProductImage[]
+  collections     CollectionProduct[]
+  reviews         ProductReview[]
+  wishlistItems   WishlistItem[]
+  orderItems      OrderItem[]
+
+  @@index([status, publishedAt])
+  @@index([brandId])
+  @@index([primaryCategoryId])
+  @@index([status, isOnSale])
+  @@index([status, priceMinor])
+  @@fulltext([title, description])
+  @@map("products")
+}
+
+model ProductCategory {
+  productId  Int
+  categoryId Int
+  sortOrder  Int @default(0)
+
+  product  Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
+  category Category @relation(fields: [categoryId], references: [id], onDelete: Cascade)
+
+  @@id([productId, categoryId])
+  @@index([categoryId, sortOrder])
+  @@map("product_categories")
+}
+
+model ProductVariant {
+  id           Int      @id @default(autoincrement())
+  productId    Int
+  colorId      Int
+  sizeId       Int
+  sku          String   @unique @db.VarChar(80)
+  barcode      String?  @unique @db.VarChar(64)
+  /// Optional per-variant price override (minor units). Null = product price.
+  priceMinor   Int?
+  weightGrams  Int?
+  isActive     Boolean  @default(true)
+  sortOrder    Int      @default(0)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  product       Product             @relation(fields: [productId], references: [id], onDelete: Cascade)
+  color         Color               @relation(fields: [colorId], references: [id], onDelete: Restrict)
+  size          Size                @relation(fields: [sizeId], references: [id], onDelete: Restrict)
+  inventory     Inventory?
+  movements     InventoryMovement[]
+  cartItems     CartItem[]
+  orderItems    OrderItem[]
+  wishlistItems WishlistItem[]
+
+  @@unique([productId, colorId, sizeId])
+  @@index([colorId])
+  @@index([sizeId])
+  @@map("product_variants")
+}
+
+/// One row per variant. available = quantityOnHand − quantityReserved.
+/// Mutated only through guarded UPDATE statements inside transactions.
+model Inventory {
+  variantId         Int      @id
+  quantityOnHand    Int      @default(0)
+  quantityReserved  Int      @default(0)
+  lowStockThreshold Int      @default(3)
+  allowBackorder    Boolean  @default(false)
+  updatedAt         DateTime @updatedAt
+
+  variant ProductVariant @relation(fields: [variantId], references: [id], onDelete: Cascade)
+
+  @@index([quantityOnHand])
+  @@map("inventory")
+}
+
+enum InventoryMovementReason {
+  INITIAL
+  ADJUSTMENT
+  RESTOCK
+  RESERVATION
+  RESERVATION_RELEASE
+  SALE
+  RETURN
+  DAMAGE
+}
+
+/// Append-only ledger of every inventory change, for audit and reconciliation.
+model InventoryMovement {
+  id             Int                     @id @default(autoincrement())
+  variantId      Int
+  reason         InventoryMovementReason
+  deltaOnHand    Int                     @default(0)
+  deltaReserved  Int                     @default(0)
+  orderId        Int?
+  actorUserId    Int?
+  note           String?                 @db.VarChar(255)
+  createdAt      DateTime                @default(now())
+
+  variant ProductVariant @relation(fields: [variantId], references: [id], onDelete: Cascade)
+  order   Order?         @relation(fields: [orderId], references: [id], onDelete: SetNull)
+  actor   User?          @relation(fields: [actorUserId], references: [id], onDelete: SetNull)
+
+  @@index([variantId, createdAt])
+  @@index([orderId])
+  @@map("inventory_movements")
+}
+
+enum ImageKind {
+  PRODUCT
+  ALTERNATE
+  DETAIL
+  LIFESTYLE
+}
+
+/// Image binaries live in S3-compatible storage; only references + metadata here.
+model ProductImage {
+  id            Int       @id @default(autoincrement())
+  productId     Int
+  /// If set, the image belongs to a specific colourway.
+  colorId       Int?
+  storageKey    String    @db.VarChar(512)
+  altText       String?   @db.VarChar(255)
+  kind          ImageKind @default(PRODUCT)
+  width         Int?
+  height        Int?
+  mimeType      String?   @db.VarChar(60)
+  bytes         Int?
+  sortOrder     Int       @default(0)
+  /// True for temporary development placeholders — never real merchandise.
+  isPlaceholder Boolean   @default(false)
+  createdAt     DateTime  @default(now())
+
+  product Product @relation(fields: [productId], references: [id], onDelete: Cascade)
+  color   Color?  @relation(fields: [colorId], references: [id], onDelete: SetNull)
+
+  @@index([productId, sortOrder])
+  @@map("product_images")
+}
+
+/// Merchandising collections ("New Season", "Everyday Essentials", …).
+model Collection {
+  id             Int      @id @default(autoincrement())
+  title          String   @db.VarChar(120)
+  slug           String   @unique @db.VarChar(140)
+  eyebrow        String?  @db.VarChar(80)
+  description    String?  @db.Text
+  imageKey       String?  @db.VarChar(512)
+  isActive       Boolean  @default(true)
+  featuredOnHome Boolean  @default(false)
+  sortOrder      Int      @default(0)
+  seoTitle       String?  @db.VarChar(160)
+  seoDescription String?  @db.VarChar(320)
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  products CollectionProduct[]
+
+  @@index([featuredOnHome, sortOrder])
+  @@map("collections")
+}
+
+model CollectionProduct {
+  collectionId Int
+  productId    Int
+  sortOrder    Int @default(0)
+
+  collection Collection @relation(fields: [collectionId], references: [id], onDelete: Cascade)
+  product    Product    @relation(fields: [productId], references: [id], onDelete: Cascade)
+
+  @@id([collectionId, productId])
+  @@index([productId])
+  @@map("collection_products")
+}
+
+enum ReviewStatus {
+  PENDING
+  APPROVED
+  REJECTED
+}
+
+model ProductReview {
+  id        Int          @id @default(autoincrement())
+  productId Int
+  userId    Int?
+  orderId   Int?
+  rating    Int          @db.TinyInt
+  title     String?      @db.VarChar(150)
+  body      String?      @db.Text
+  status    ReviewStatus @default(PENDING)
+  createdAt DateTime     @default(now())
+  updatedAt DateTime     @updatedAt
+
+  product Product @relation(fields: [productId], references: [id], onDelete: Cascade)
+  user    User?   @relation(fields: [userId], references: [id], onDelete: SetNull)
+
+  @@unique([productId, userId])
+  @@index([productId, status])
+  @@map("product_reviews")
+}
+
+// ══════════════════════════════ Cart & wishlist ═════════════════════════════
+
+enum CartStatus {
+  ACTIVE
+  MERGED
+  CONVERTED
+  ABANDONED
+}
+
+/// Guest carts are identified by a random token in a signed, httpOnly cookie;
+/// only its SHA-256 hash is stored. Customer carts are linked by userId.
+model Cart {
+  id             Int        @id @default(autoincrement())
+  userId         Int?
+  guestTokenHash String?    @unique @db.Char(64)
+  status         CartStatus @default(ACTIVE)
+  currency       String     @default("EUR") @db.Char(3)
+  couponId       Int?
+  expiresAt      DateTime?
+  createdAt      DateTime   @default(now())
+  updatedAt      DateTime   @updatedAt
+
+  user   User?      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  coupon Coupon?    @relation(fields: [couponId], references: [id], onDelete: SetNull)
+  items  CartItem[]
+
+  @@index([userId, status])
+  @@index([status, updatedAt])
+  @@map("carts")
+}
+
+model CartItem {
+  id        Int      @id @default(autoincrement())
+  cartId    Int
+  variantId Int
+  quantity  Int
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  cart    Cart           @relation(fields: [cartId], references: [id], onDelete: Cascade)
+  variant ProductVariant @relation(fields: [variantId], references: [id], onDelete: Cascade)
+
+  @@unique([cartId, variantId])
+  @@map("cart_items")
+}
+
+model Wishlist {
+  id        Int      @id @default(autoincrement())
+  userId    Int      @unique
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  user  User           @relation(fields: [userId], references: [id], onDelete: Cascade)
+  items WishlistItem[]
+
+  @@map("wishlists")
+}
+
+model WishlistItem {
+  id         Int      @id @default(autoincrement())
+  wishlistId Int
+  productId  Int
+  variantId  Int?
+  createdAt  DateTime @default(now())
+
+  wishlist Wishlist        @relation(fields: [wishlistId], references: [id], onDelete: Cascade)
+  product  Product         @relation(fields: [productId], references: [id], onDelete: Cascade)
+  variant  ProductVariant? @relation(fields: [variantId], references: [id], onDelete: SetNull)
+
+  @@unique([wishlistId, productId])
+  @@map("wishlist_items")
+}
+
+// ═══════════════════════════════════ Orders ═════════════════════════════════
+
+enum OrderStatus {
+  PENDING_PAYMENT
+  PAID
+  PROCESSING
+  SHIPPED
+  DELIVERED
+  CANCELLED
+  FAILED
+  REFUNDED
+}
+
+enum PaymentStatus {
+  PENDING
+  AUTHORIZED
+  PAID
+  FAILED
+  CANCELLED
+  PARTIALLY_REFUNDED
+  REFUNDED
+  /// Cash on delivery — collected by the courier on delivery.
+  COD_PENDING
+}
+
+enum FulfillmentStatus {
+  UNFULFILLED
+  PROCESSING
+  SHIPPED
+  DELIVERED
+  RETURNED
+}
+
+enum PaymentMethod {
+  CARD
+  CASH_ON_DELIVERY
+}
+
+model Order {
+  id                Int               @id @default(autoincrement())
+  orderNumber       String            @unique @db.VarChar(32)
+  userId            Int?
+  email             String            @db.VarChar(254)
+  phone             String?           @db.VarChar(40)
+  customerFirstName String            @db.VarChar(100)
+  customerLastName  String            @db.VarChar(100)
+  /// Address snapshots (JSON) — immutable copy at checkout time.
+  shippingAddress   Json
+  billingAddress    Json?
+  status            OrderStatus       @default(PENDING_PAYMENT)
+  paymentStatus     PaymentStatus     @default(PENDING)
+  fulfillmentStatus FulfillmentStatus @default(UNFULFILLED)
+  paymentMethod     PaymentMethod
+  currency          String            @default("EUR") @db.Char(3)
+  subtotalMinor     Int
+  discountMinor     Int               @default(0)
+  shippingMinor     Int               @default(0)
+  /// VAT contained in the total (prices are VAT-inclusive).
+  taxMinor          Int               @default(0)
+  totalMinor        Int
+  refundedMinor     Int               @default(0)
+  shippingMethodId  Int?
+  shippingMethodName String           @db.VarChar(120)
+  couponCode        String?           @db.VarChar(40)
+  customerNote      String?           @db.VarChar(1000)
+  /// Client-supplied key; prevents a double-submitted checkout creating two orders.
+  idempotencyKey    String            @unique @db.VarChar(64)
+  /// When the stock reservation for an unpaid order lapses.
+  reservationExpiresAt DateTime?
+  placedAt          DateTime          @default(now())
+  paidAt            DateTime?
+  cancelledAt       DateTime?
+  updatedAt         DateTime          @updatedAt
+
+  user               User?               @relation(fields: [userId], references: [id], onDelete: SetNull)
+  shippingMethod     ShippingMethod?     @relation(fields: [shippingMethodId], references: [id], onDelete: SetNull)
+  items              OrderItem[]
+  payments           Payment[]
+  shipments          Shipment[]
+  events             OrderEvent[]
+  couponRedemptions  CouponRedemption[]
+  inventoryMovements InventoryMovement[]
+
+  @@index([userId, placedAt])
+  @@index([status, placedAt])
+  @@index([paymentStatus])
+  @@index([email])
+  @@index([reservationExpiresAt])
+  @@map("orders")
+}
+
+/// Line items are a full snapshot; productId/variantId are kept for reporting
+/// only and become NULL if the catalogue record is ever hard-deleted.
+model OrderItem {
+  id                  Int     @id @default(autoincrement())
+  orderId             Int
+  productId           Int?
+  variantId           Int?
+  sku                 String  @db.VarChar(80)
+  productTitle        String  @db.VarChar(200)
+  brandName           String? @db.VarChar(120)
+  colorName           String  @db.VarChar(60)
+  sizeLabel           String  @db.VarChar(20)
+  imageKey            String? @db.VarChar(512)
+  unitPriceMinor      Int
+  compareAtPriceMinor Int?
+  quantity            Int
+  discountMinor       Int     @default(0)
+  lineTotalMinor      Int
+
+  order   Order           @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  product Product?        @relation(fields: [productId], references: [id], onDelete: SetNull)
+  variant ProductVariant? @relation(fields: [variantId], references: [id], onDelete: SetNull)
+
+  @@index([orderId])
+  @@index([productId])
+  @@index([variantId])
+  @@map("order_items")
+}
+
+/// Status timeline for an order (customer-visible and internal notes).
+model OrderEvent {
+  id          Int          @id @default(autoincrement())
+  orderId     Int
+  fromStatus  OrderStatus?
+  toStatus    OrderStatus?
+  message     String?      @db.VarChar(500)
+  isInternal  Boolean      @default(false)
+  actorUserId Int?
+  createdAt   DateTime     @default(now())
+
+  order Order @relation(fields: [orderId], references: [id], onDelete: Cascade)
+
+  @@index([orderId, createdAt])
+  @@map("order_events")
+}
+
+// ══════════════════════════════════ Payments ════════════════════════════════
+
+enum PaymentProvider {
+  MONRI
+  ALLSECURE
+  CASH_ON_DELIVERY
+  MANUAL
+}
+
+/// One attempt to collect money for an order. Raw card data / CVV are NEVER stored.
+model Payment {
+  id                Int             @id @default(autoincrement())
+  orderId           Int
+  provider          PaymentProvider
+  status            PaymentStatus   @default(PENDING)
+  amountMinor       Int
+  currency          String          @db.Char(3)
+  refundedMinor     Int             @default(0)
+  /// Provider's transaction / order reference.
+  providerReference String?         @db.VarChar(128)
+  providerSessionId String?         @db.VarChar(128)
+  idempotencyKey    String          @unique @db.VarChar(64)
+  cardBrand         String?         @db.VarChar(30)
+  cardLast4         String?         @db.Char(4)
+  failureCode       String?         @db.VarChar(60)
+  failureMessage    String?         @db.VarChar(255)
+  authorizedAt      DateTime?
+  capturedAt        DateTime?
+  createdAt         DateTime        @default(now())
+  updatedAt         DateTime        @updatedAt
+
+  order   Order          @relation(fields: [orderId], references: [id], onDelete: Restrict)
+  events  PaymentEvent[]
+  refunds Refund[]
+
+  @@unique([provider, providerReference])
+  @@index([orderId])
+  @@index([status])
+  @@map("payments")
+}
+
+/// Every webhook/callback received, stored before processing.
+/// (provider, eventId) is unique → re-delivered webhooks are processed once.
+model PaymentEvent {
+  id              Int             @id @default(autoincrement())
+  provider        PaymentProvider
+  eventId         String          @db.VarChar(128)
+  paymentId       Int?
+  type            String          @db.VarChar(80)
+  signatureValid  Boolean
+  payload         Json
+  receivedAt      DateTime        @default(now())
+  processedAt     DateTime?
+  processingError String?         @db.VarChar(500)
+
+  payment Payment? @relation(fields: [paymentId], references: [id], onDelete: SetNull)
+
+  @@unique([provider, eventId])
+  @@index([paymentId])
+  @@index([processedAt])
+  @@map("payment_events")
+}
+
+enum RefundStatus {
+  PENDING
+  SUCCEEDED
+  FAILED
+}
+
+model Refund {
+  id                Int          @id @default(autoincrement())
+  paymentId         Int
+  amountMinor       Int
+  status            RefundStatus @default(PENDING)
+  reason            String?      @db.VarChar(255)
+  providerReference String?      @db.VarChar(128)
+  idempotencyKey    String       @unique @db.VarChar(64)
+  actorUserId       Int?
+  createdAt         DateTime     @default(now())
+  updatedAt         DateTime     @updatedAt
+
+  payment Payment @relation(fields: [paymentId], references: [id], onDelete: Restrict)
+
+  @@index([paymentId])
+  @@map("refunds")
+}
+
+// ═════════════════════════════════ Shipping ═════════════════════════════════
+
+model ShippingZone {
+  id           Int      @id @default(autoincrement())
+  name         String   @unique @db.VarChar(80)
+  /// ISO-3166 alpha-2 codes, e.g. ["ME","RS","BA"].
+  countryCodes Json
+  isActive     Boolean  @default(true)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  methods ShippingMethod[]
+
+  @@map("shipping_zones")
+}
+
+model ShippingMethod {
+  id                 Int      @id @default(autoincrement())
+  zoneId             Int
+  code               String   @db.VarChar(40)
+  name               String   @db.VarChar(120)
+  description        String?  @db.VarChar(255)
+  priceMinor         Int
+  /// Free when the discounted subtotal reaches this value. Null = never free.
+  freeOverMinor      Int?
+  minDays            Int?
+  maxDays            Int?
+  allowsCashOnDelivery Boolean @default(true)
+  isActive           Boolean  @default(true)
+  sortOrder          Int      @default(0)
+  createdAt          DateTime @default(now())
+  updatedAt          DateTime @updatedAt
+
+  zone   ShippingZone @relation(fields: [zoneId], references: [id], onDelete: Cascade)
+  orders Order[]
+
+  @@unique([zoneId, code])
+  @@map("shipping_methods")
+}
+
+enum ShipmentStatus {
+  PENDING
+  SHIPPED
+  IN_TRANSIT
+  DELIVERED
+  RETURNED
+}
+
+model Shipment {
+  id             Int            @id @default(autoincrement())
+  orderId        Int
+  carrier        String         @db.VarChar(80)
+  trackingNumber String?        @db.VarChar(120)
+  trackingUrl    String?        @db.VarChar(500)
+  status         ShipmentStatus @default(PENDING)
+  shippedAt      DateTime?
+  deliveredAt    DateTime?
+  createdAt      DateTime       @default(now())
+  updatedAt      DateTime       @updatedAt
+
+  order Order @relation(fields: [orderId], references: [id], onDelete: Cascade)
+
+  @@index([orderId])
+  @@index([trackingNumber])
+  @@map("shipments")
+}
+
+// ════════════════════════════ Promotions & coupons ══════════════════════════
+
+enum CouponType {
+  PERCENTAGE    // value = basis points (1500 = 15%)
+  FIXED_AMOUNT  // value = minor units
+  FREE_SHIPPING
+}
+
+model Coupon {
+  id                    Int        @id @default(autoincrement())
+  code                  String     @unique @db.VarChar(40)
+  description           String?    @db.VarChar(255)
+  type                  CouponType
+  value                 Int        @default(0)
+  minSubtotalMinor      Int?
+  maxDiscountMinor      Int?
+  appliesToSaleItems    Boolean    @default(false)
+  usageLimit            Int?
+  usageLimitPerCustomer Int?
+  timesRedeemed         Int        @default(0)
+  startsAt              DateTime?
+  endsAt                DateTime?
+  isActive              Boolean    @default(true)
+  createdAt             DateTime   @default(now())
+  updatedAt             DateTime   @updatedAt
+
+  redemptions CouponRedemption[]
+  carts       Cart[]
+
+  @@map("coupons")
+}
+
+model CouponRedemption {
+  id          Int      @id @default(autoincrement())
+  couponId    Int
+  orderId     Int      @unique
+  userId      Int?
+  email       String   @db.VarChar(254)
+  amountMinor Int
+  createdAt   DateTime @default(now())
+
+  coupon Coupon @relation(fields: [couponId], references: [id], onDelete: Restrict)
+  order  Order  @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  user   User?  @relation(fields: [userId], references: [id], onDelete: SetNull)
+
+  @@index([couponId, email])
+  @@index([couponId, userId])
+  @@map("coupon_redemptions")
+}
+
+// ═════════════════════════ Content (admin-managed) ══════════════════════════
+
+/// Typed key/value store settings: store name, currency, COD enabled, VAT rate…
+model StoreSetting {
+  key       String   @id @db.VarChar(80)
+  value     Json
+  updatedAt DateTime @updatedAt
+
+  @@map("store_settings")
+}
+
+model AnnouncementMessage {
+  id        Int       @id @default(autoincrement())
+  message   String    @db.VarChar(200)
+  linkLabel String?   @db.VarChar(60)
+  linkUrl   String?   @db.VarChar(500)
+  isActive  Boolean   @default(true)
+  sortOrder Int       @default(0)
+  startsAt  DateTime?
+  endsAt    DateTime?
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+
+  @@index([isActive, sortOrder])
+  @@map("announcement_messages")
+}
+
+enum HeroLayout {
+  /// Text on a light panel, image + colour field on the right.
+  SPLIT_RIGHT
+  SPLIT_LEFT
+  /// Edge-to-edge photograph with overlaid text.
+  FULL_BLEED
+}
+
+model HeroSlide {
+  id                 Int        @id @default(autoincrement())
+  layout             HeroLayout @default(SPLIT_RIGHT)
+  eyebrow            String?    @db.VarChar(80)
+  headline           String     @db.VarChar(120)
+  body               String?    @db.VarChar(400)
+  primaryCtaLabel    String     @default("Shop collection") @db.VarChar(40)
+  primaryCtaUrl      String     @db.VarChar(500)
+  secondaryCtaLabel  String?    @db.VarChar(40)
+  secondaryCtaUrl    String?    @db.VarChar(500)
+  imageKey           String?    @db.VarChar(512)
+  imageAlt           String?    @db.VarChar(255)
+  imageIsPlaceholder Boolean    @default(false)
+  /// Colour field behind the image (hex). Lets each campaign carry its own tone.
+  panelColor         String     @default("#EEECE7") @db.Char(7)
+  isActive           Boolean    @default(true)
+  sortOrder          Int        @default(0)
+  startsAt           DateTime?
+  endsAt             DateTime?
+  createdAt          DateTime   @default(now())
+  updatedAt          DateTime   @updatedAt
+
+  @@index([isActive, sortOrder])
+  @@map("hero_slides")
+}
+
+enum ContentPlacement {
+  HOME_EDITORIAL
+  HOME_SERVICE_STRIP
+}
+
+model ContentBlock {
+  id                 Int              @id @default(autoincrement())
+  placement          ContentPlacement
+  eyebrow            String?          @db.VarChar(80)
+  title              String           @db.VarChar(160)
+  body               String?          @db.Text
+  ctaLabel           String?          @db.VarChar(40)
+  ctaUrl             String?          @db.VarChar(500)
+  imageKey           String?          @db.VarChar(512)
+  imageAlt           String?          @db.VarChar(255)
+  imageIsPlaceholder Boolean          @default(false)
+  isActive           Boolean          @default(true)
+  sortOrder          Int              @default(0)
+  createdAt          DateTime         @default(now())
+  updatedAt          DateTime         @updatedAt
+
+  @@index([placement, isActive, sortOrder])
+  @@map("content_blocks")
+}
+
+enum NewsletterStatus {
+  PENDING
+  SUBSCRIBED
+  UNSUBSCRIBED
+}
+
+model NewsletterSubscriber {
+  id               Int              @id @default(autoincrement())
+  email            String           @unique @db.VarChar(254)
+  status           NewsletterStatus @default(PENDING)
+  source           String?          @db.VarChar(60)
+  consentText      String?          @db.VarChar(500)
+  consentAt        DateTime?
+  confirmTokenHash String?          @unique @db.Char(64)
+  confirmedAt      DateTime?
+  unsubscribedAt   DateTime?
+  createdAt        DateTime         @default(now())
+  updatedAt        DateTime         @updatedAt
+
+  @@index([status])
+  @@map("newsletter_subscribers")
+}
+
+/// Append-only record of sensitive administrative actions.
+model AdminAuditLog {
+  id          Int      @id @default(autoincrement())
+  actorUserId Int?
+  action      String   @db.VarChar(80)
+  entityType  String   @db.VarChar(60)
+  entityId    String?  @db.VarChar(64)
+  before      Json?
+  after       Json?
+  ipAddress   String?  @db.VarChar(45)
+  userAgent   String?  @db.VarChar(255)
+  createdAt   DateTime @default(now())
+
+  actor User? @relation(fields: [actorUserId], references: [id], onDelete: SetNull)
+
+  @@index([entityType, entityId])
+  @@index([actorUserId, createdAt])
+  @@index([createdAt])
+  @@map("admin_audit_log")
+}
