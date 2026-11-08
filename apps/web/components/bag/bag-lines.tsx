@@ -78,7 +78,7 @@ export function LineItem({ line, compact = false, onNavigate }: { line: CartLine
   );
 }
 
-export function Totals({ cart }: { cart: Cart }) {
+export function Totals({ cart, exactDelivery = false }: { cart: Cart; exactDelivery?: boolean }) {
   const { t, intl } = useI18n();
   const B = t.bag;
   const money = (m: number) => formatMoney(m, cart.currency, intl);
@@ -90,26 +90,28 @@ export function Totals({ cart }: { cart: Cart }) {
         <div className="flex justify-between text-claret"><span>{B.discount}{cart.coupon ? ` (${cart.coupon.code})` : ""}</span><span className="tabular-nums">−{money(cart.discountMinor)}</span></div>
       )}
       {cart.shipping && (
-        <div className="flex justify-between"><span>{B.delivery}</span><span className="tabular-nums">{cart.shipping.estimateMinor === 0 ? B.free : money(cart.shipping.estimateMinor)}</span></div>
+        <div className="flex justify-between"><span>{exactDelivery ? t.account.shipping : B.delivery}</span><span className="tabular-nums">{cart.shipping.estimateMinor === 0 ? B.free : money(cart.shipping.estimateMinor)}</span></div>
       )}
       <div className="flex justify-between border-t border-line pt-3 text-body font-medium"><span>{B.total}</span><span className="tabular-nums">{money(cart.totalMinor)}</span></div>
       <p className="text-micro text-mute">{B.vat(money(cart.vatMinor))}</p>
-      {remaining != null && (
+      {remaining != null && !exactDelivery && (
         <p className="pt-1 text-micro text-ink/75 sm:text-small" aria-live="polite">{remaining > 0 ? B.freeRemaining(money(remaining)) : B.freeReached}</p>
       )}
     </div>
   );
 }
 
-/** Checkout opens in Phase 6; until then the button is honest about it. */
-export function CheckoutButton({ cart }: { cart: Cart }) {
-  const { t } = useI18n();
-  return (
-    <div>
-      <button type="button" disabled className="btn btn-solid w-full disabled:cursor-not-allowed disabled:border-line disabled:bg-sand disabled:text-mute" aria-describedby="checkout-note">
+export function CheckoutButton({ cart, onNavigate }: { cart: Cart; onNavigate?: () => void }) {
+  const { t, href } = useI18n();
+  if (!cart.canCheckout)
+    return (
+      <button type="button" disabled className="btn btn-solid w-full disabled:cursor-not-allowed disabled:border-line disabled:bg-sand disabled:text-mute">
         {t.bag.checkout}
       </button>
-      <p id="checkout-note" className="mt-2 text-center text-micro text-mute">{cart.canCheckout ? t.bag.checkoutSoon : ""}</p>
-    </div>
+    );
+  return (
+    <Link href={href("/checkout")} onClick={onNavigate} className="btn btn-solid w-full">
+      {t.bag.checkout}
+    </Link>
   );
 }

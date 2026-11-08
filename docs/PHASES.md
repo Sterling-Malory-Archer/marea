@@ -7,8 +7,8 @@
 | 3 | Design system, header/nav, announcement bar, homepage | ✅ Done |
 | 4 | Bilingual routing (EN / Montenegrin), catalogue pages, filters, search, product detail, variants UI | ✅ Done |
 | 5 | Customer accounts, auth, cart, wishlist (DB-backed) | ✅ Done |
-| 6 | Checkout, orders, inventory reservations | Next |
-| 7 | Payment provider + webhooks | Needs merchant account (see below) |
+| 6 | Checkout, orders, inventory reservations | ✅ Done |
+| 7 | Payment provider + webhooks | Next — needs merchant account (see below) |
 | 8 | Admin dashboard UI, e-mails, shipping | |
 | 9 | SEO, performance, security hardening, responsive QA | |
 | 10 | End-to-end tests, staging, launch | |
@@ -70,6 +70,19 @@
 - [x] Slide-out bag drawer on add, full bag page, header count; wishlist saved to the account and merged from the browser on sign-in.
 - [x] 67 integration tests (23 new) — all passing; end-to-end browser run (add → bag → code → register → verify → address → sign out/in, plus Montenegrin mobile) with no page errors.
 - [ ] Real e-mail delivery: needs an SMTP account (owner action, see below).
+
+## Phase 6 — acceptance
+
+- [x] One-page, five-step checkout (contact → address → delivery → payment → review) plus confirmation page, in English and Montenegrin, guest or signed-in (saved addresses, save new address, account details pre-filled).
+- [x] Delivery methods by destination zone; payment methods offered only when actually available (cash on delivery per method and setting; card appears automatically once Phase 7 connects a provider).
+- [x] Order placement in one MySQL transaction: snapshot order + items + addresses, guarded stock reservation per line, guarded coupon redemption, payment record, bag converted. Any failure rolls everything back.
+- [x] Protections: idempotency key (double submit → same order), `PRICE_CHANGED` if the total differs from what the buyer saw, out-of-stock race (two buyers, one unit → exactly one order), single-use codes can't be over-redeemed, once-per-customer codes enforced by e-mail for guests.
+- [x] Non-sequential order numbers (`MR-26-7KQ4XD`); guest confirmation pages protected by a one-time access token (hash stored); signed-in owners need no token.
+- [x] Configurable inventory rules (`store_settings`): `inventory.codStockCommit` = `order` | `shipment`; `inventory.reservationMinutes` for unpaid online orders, released by a background job (and `pnpm --filter @marea/api job:release-reservations` for external schedulers).
+- [x] Order state machine with side effects under a row lock: ship (tracking + e-mail, COD stock commit if configured), deliver (cash collected → paid), cancel (reservations released or stock returned, coupon use freed, e-mail), refund for COD records; invalid transitions rejected.
+- [x] Admin order API: list/search (number, e-mail, name, phone, SKU) and filter, detail with timeline/payments/stock movements, status changes, shipments with tracking, internal notes — permission-checked and audited. (Admin screens: Phase 8.)
+- [x] Bilingual order e-mails: confirmation, shipped (tracking link), delivered, cancelled.
+- [x] 80 integration tests (13 new) passing in random order; three end-to-end browser checkouts (EN guest desktop, ME guest mobile, signed-in customer).
 
 ## Owner actions before launch
 

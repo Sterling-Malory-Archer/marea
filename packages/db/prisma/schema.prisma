@@ -615,6 +615,14 @@ model Order {
   customerNote      String?           @db.VarChar(1000)
   /// Client-supplied key; prevents a double-submitted checkout creating two orders.
   idempotencyKey    String            @unique @db.VarChar(64)
+  /// SHA-256 of a random token given to the buyer; lets guests open their confirmation page.
+  accessTokenHash   String?           @db.Char(64)
+  /// Language of customer e-mails for this order.
+  locale            String            @default("en") @db.VarChar(10)
+  /// ISO country of the delivery address (denormalised for reporting and zone rules).
+  shippingCountry   String            @default("ME") @db.Char(2)
+  /// The cart this order was created from (for idempotent retries).
+  cartId            Int?
   /// When the stock reservation for an unpaid order lapses.
   reservationExpiresAt DateTime?
   placedAt          DateTime          @default(now())

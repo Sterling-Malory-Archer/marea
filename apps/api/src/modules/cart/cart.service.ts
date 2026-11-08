@@ -179,7 +179,23 @@ const lineInclude = (locale: Locale) =>
 
 export type LineIssue = "UNAVAILABLE" | "OUT_OF_STOCK" | "INSUFFICIENT_STOCK";
 
-export async function priceCart(ctx: AppContext, cartId: number, locale: Locale, opts: { userId?: number | null } = {}) {
+export interface PriceOptions {
+  userId?: number | null;
+  /** Buyer e-mail (checkout): enforces per-customer coupon limits for guests too. */
+  email?: string | null;
+  /** Checkout: price a specific delivery method for a destination country. */
+  shipping?: { country: string; methodCode?: string | null };
+}
+
+/** Active delivery zone for a country, with its active methods (cheapest first). */
+export async function zoneForCountry(db: Db | Tx, country: string) {
+  return db.shippingZone.findFirst({
+    where: { isActive: true, countryCodes: { array_contains: country.toUpperCase() } },
+    include: { methods: { where: { isActive: true }, orderBy: [{ sortOrder: "asc" }, { priceMinor: "asc" }] } },
+  });
+}
+
+export async function priceCart(ctx: AppContext, cartId: number, locale: Locale, opts: PriceOptions = {}) {
   const cart = await ctx.db.cart.findUniqueOrThrow({
     where: { id: cartId },
     include: { coupon: true, items: { orderBy: { createdAt: "asc" }, include: lineInclude(locale) } },
@@ -223,16 +239,15 @@ export async function priceCart(ctx: AppContext, cartId: number, locale: Locale,
   const eligible = priced.filter((l) => !l.isOnSale || cart.coupon?.appliesToSaleItems).reduce((s, l) => s + l.lineTotalMinor, 0);
 
   let coupon: CouponResult | null = null;
-  if (cart.coupon) coupon = await evaluateCoupon(ctx.db, cart.coupon, { subtotalMinor: subtotal, eligibleSubtotalMinor: eligible, userId: opts.userId });
+  if (cart.coupon) coupon = await evaluateCoupon(ctx.db, cart.coupon, { subtotalMinor: subtotal, eligibleSubtotalMinor: eligible, userId: opts.userId, email: opts.email });
   const discount = coupon?.ok ? Math.min(coupon.discountMinor, subtotal) : 0;
   const afterDiscount = subtotal - discount;
 
-  // Delivery estimate: cheapest active Montenegro method; exact cost is chosen at checkout.
-  const zone = await ctx.db.shippingZone.findFirst({
-    where: { isActive: true, countryCodes: { array_contains: "ME" } },
-    include: { methods: { where: { isActive: true }, orderBy: { priceMinor: "asc" }, take: 1 } },
-  });
-  const method = zone?.methods[0] ?? null;
+  // Bag: estimate with the cheapest Montenegro method. Checkout: the chosen method for the destination.
+  const zone = await zoneForCountry(ctx.db, opts.shipping?.country ?? "ME");
+  const method = opts.shipping?.methodCode
+    ? zone?.methods.find((m) => m.code === opts.shipping!.methodCode) ?? null
+    : [...(zone?.methods ?? [])].sort((a, b) => a.priceMinor - b.priceMinor)[0] ?? null;
   const freeOver = method?.freeOverMinor ?? null;
   const shipping = priced.length === 0 || !method || coupon?.freeShipping || (freeOver != null && afterDiscount >= freeOver) ? 0 : method.priceMinor;
   const total = afterDiscount + shipping;
@@ -245,7 +260,9 @@ export async function priceCart(ctx: AppContext, cartId: number, locale: Locale,
     lines,
     subtotalMinor: subtotal,
     discountMinor: discount,
-    shipping: method ? { code: method.code, estimateMinor: shipping, freeOverMinor: freeOver, freeShippingRemainingMinor: freeOver != null && priced.length ? Math.max(0, freeOver - afterDiscount) : null } : null,
+    shipping: method
+      ? { code: method.code, name: method.name, estimateMinor: shipping, freeOverMinor: freeOver, freeShippingRemainingMinor: freeOver != null && priced.length ? Math.max(0, freeOver - afterDiscount) : null, allowsCashOnDelivery: method.allowsCashOnDelivery, methodId: method.id }
+      : null,
     totalMinor: total,
     // Prices include VAT; this is the VAT portion of the total.
     vatMinor: Math.round((total * rate) / (10000 + rate)),

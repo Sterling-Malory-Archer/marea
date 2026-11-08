@@ -17,6 +17,8 @@ import { translationsAdminRouter } from "./modules/i18n/translations-admin.route
 import { customerAuthRouter } from "./modules/customers/auth.routes.js";
 import { accountRouter } from "./modules/customers/account.routes.js";
 import { cartRouter } from "./modules/cart/cart.routes.js";
+import { checkoutRouter } from "./modules/checkout/checkout.routes.js";
+import { ordersAdminRouter } from "./modules/orders/orders-admin.routes.js";
 
 export function createApp(ctx: AppContext) {
   const app = express();
@@ -83,6 +85,7 @@ export function createApp(ctx: AppContext) {
   api.use("/auth", customer, customerAuthRouter(ctx));
   api.use("/account", customer, accountRouter(ctx));
   api.use("/cart", customer, cartRouter(ctx));
+  api.use("/checkout", customer, checkoutRouter(ctx));
   api.use("/admin/auth", adminAuthRouter(ctx));
 
   const admin = Router();
@@ -90,6 +93,7 @@ export function createApp(ctx: AppContext) {
   admin.use(taxonomyAdminRouter(ctx));
   admin.use(productsAdminRouter(ctx));
   admin.use(translationsAdminRouter(ctx));
+  admin.use(ordersAdminRouter(ctx));
   api.use("/admin", admin);
 
   app.use("/api", api);

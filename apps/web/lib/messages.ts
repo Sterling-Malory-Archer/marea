@@ -96,6 +96,25 @@ const en = {
     stockError: (n: number) => (n === 0 ? "This size is sold out." : `Only ${n} available.`), close: "Close bag",
   },
   wishlistPage: { title: "Wishlist", empty: "Your wishlist is empty", emptyText: "Tap the heart on any piece to save it here.", guestNote: "Saved on this device. Sign in to keep your wishlist on all your devices." },
+  checkout: {
+    title: "Checkout", secure: "Prices include VAT", edit: "Edit", continue: "Continue", step: (n: number, total: number) => `Step ${n} of ${total}`,
+    contact: "Contact", contactNote: "We’ll send your order confirmation here.", signInPrompt: "Have an account?", signInLink: "Sign in for faster checkout",
+    address: "Delivery address", useSaved: "Saved addresses", newAddress: "Use a new address", saveAddress: "Save this address to my account",
+    delivery: "Delivery method", noDelivery: "We don’t deliver to this country yet.",
+    payment: "Payment", cod: "Cash on delivery", codNote: "Pay the courier in cash when your order arrives.", noPayment: "No payment method is available for this delivery option. Choose another delivery method or destination.",
+    review: "Review and place order", note: "Note for our team (optional)", terms: "I accept the", termsLink: "terms of sale", termsError: "Please accept the terms of sale.",
+    place: "Place order", placing: "Placing your order…", payNow: (a: string) => `Place order — ${a}`,
+    summary: "Order summary", showItems: (n: number) => `Show items (${n})`, empty: "Your bag is empty", backToBag: "Back to bag",
+    errors: {
+      PRICE_CHANGED: "Prices or delivery costs changed while you were checking out. Please review the new total.",
+      OUT_OF_STOCK: "Sorry — an item in your bag just sold out. Please review your bag.", CART_ISSUES: "Some items in your bag are no longer available in the chosen quantity.",
+      PAYMENT_UNAVAILABLE: "This payment method isn’t available for the selected delivery.", SHIPPING_UNAVAILABLE: "This delivery method isn’t available for the destination.",
+      COUPON: "Your discount code can no longer be used and has been removed from the total.", EMPTY_CART: "Your bag is empty.", generic: "We couldn’t place your order. Nothing was charged — please try again.",
+    } as Record<string, string>,
+    confirmTitle: (n: string) => `Thank you, ${n}`, confirmNumber: (n: string) => `Order ${n}`, confirmEmail: (e: string) => `A confirmation has been sent to ${e}.`,
+    nextTitle: "What happens next", nextCod: "We’re preparing your order now. You’ll receive an e-mail with tracking as soon as it ships. Please have the exact amount ready to pay the courier in cash.",
+    createAccount: "Create an account to follow this order and check out faster next time.", createAccountLink: "Create account", viewOrders: "View your orders", keepShopping: "Continue shopping", notFound: "We couldn’t find this order. Open the link from your confirmation e-mail.",
+  },
   errors: { notFound: "Page not found", notFoundText: "This page doesn’t exist or has moved. Try the latest arrivals, or use search to find a specific piece.", seeNew: "See new arrivals", backHome: "Back to home", failed: "This page didn’t load", failedText: "We couldn’t reach the store just now. Try again in a moment.", retry: "Try again" },
 };
 
@@ -196,6 +215,25 @@ const me: Messages = {
     stockError: (n: number) => (n === 0 ? "Ova veličina je rasprodata." : `Dostupno samo ${n} kom.`), close: "Zatvori korpu",
   },
   wishlistPage: { title: "Lista želja", empty: "Vaša lista želja je prazna", emptyText: "Dodirnite srce na bilo kom artiklu da ga sačuvate ovdje.", guestNote: "Sačuvano na ovom uređaju. Prijavite se da biste listu želja imali na svim uređajima." },
+  checkout: {
+    title: "Završetak kupovine", secure: "Cijene uključuju PDV", edit: "Izmijeni", continue: "Nastavi", step: (n: number, total: number) => `Korak ${n} od ${total}`,
+    contact: "Kontakt", contactNote: "Ovdje ćemo poslati potvrdu porudžbine.", signInPrompt: "Imate nalog?", signInLink: "Prijavite se za bržu kupovinu",
+    address: "Adresa za dostavu", useSaved: "Sačuvane adrese", newAddress: "Nova adresa", saveAddress: "Sačuvaj adresu u mom nalogu",
+    delivery: "Način dostave", noDelivery: "Još ne dostavljamo u ovu državu.",
+    payment: "Plaćanje", cod: "Plaćanje pouzećem", codNote: "Platite kuriru gotovinom prilikom preuzimanja.", noPayment: "Za ovaj način dostave nije dostupan nijedan način plaćanja. Izaberite drugu dostavu ili odredište.",
+    review: "Pregled i potvrda", note: "Napomena za naš tim (nije obavezno)", terms: "Prihvatam", termsLink: "uslove prodaje", termsError: "Prihvatite uslove prodaje.",
+    place: "Potvrdi porudžbinu", placing: "Potvrđivanje porudžbine…", payNow: (a: string) => `Potvrdi porudžbinu — ${a}`,
+    summary: "Pregled porudžbine", showItems: (n: number) => `Prikaži artikle (${n})`, empty: "Vaša korpa je prazna", backToBag: "Nazad u korpu",
+    errors: {
+      PRICE_CHANGED: "Cijene ili troškovi dostave su se promijenili tokom kupovine. Pregledajte novi iznos.",
+      OUT_OF_STOCK: "Nažalost — artikal iz korpe je upravo rasprodat. Pregledajte korpu.", CART_ISSUES: "Neki artikli više nisu dostupni u izabranoj količini.",
+      PAYMENT_UNAVAILABLE: "Ovaj način plaćanja nije dostupan za izabranu dostavu.", SHIPPING_UNAVAILABLE: "Ovaj način dostave nije dostupan za odredište.",
+      COUPON: "Kod za popust se više ne može koristiti i uklonjen je iz iznosa.", EMPTY_CART: "Vaša korpa je prazna.", generic: "Porudžbina nije kreirana. Ništa nije naplaćeno — pokušajte ponovo.",
+    },
+    confirmTitle: (n: string) => `Hvala, ${n}`, confirmNumber: (n: string) => `Porudžbina ${n}`, confirmEmail: (e: string) => `Potvrda je poslata na ${e}.`,
+    nextTitle: "Šta slijedi", nextCod: "Upravo pripremamo vašu porudžbinu. Čim bude poslata, dobićete e-mail sa brojem za praćenje. Pripremite tačan iznos za plaćanje kuriru gotovinom.",
+    createAccount: "Otvorite nalog da biste pratili ovu porudžbinu i brže kupovali sljedeći put.", createAccountLink: "Otvori nalog", viewOrders: "Vaše porudžbine", keepShopping: "Nastavi kupovinu", notFound: "Porudžbina nije pronađena. Otvorite link iz e-maila sa potvrdom.",
+  },
   errors: { notFound: "Stranica nije pronađena", notFoundText: "Ova stranica ne postoji ili je premještena. Pogledajte novitete ili upotrijebite pretragu.", seeNew: "Pogledaj novo", backHome: "Nazad na početnu", failed: "Stranica se nije učitala", failedText: "Trenutno ne možemo da dođemo do prodavnice. Pokušajte ponovo za trenutak.", retry: "Pokušaj ponovo" },
 };
 

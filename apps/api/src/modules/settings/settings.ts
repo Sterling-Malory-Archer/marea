@@ -14,6 +14,12 @@ export const settingsSchema = z.object({
   "checkout.codEnabled": z.boolean().default(true),
   "tax.vatRateBps": z.number().int().min(0).max(10000).default(2100),
   "returns.days": z.number().int().min(0).default(14),
+  /// Minutes an unpaid online-payment order holds its stock before it is released.
+  "inventory.reservationMinutes": z.number().int().min(5).max(24 * 60).default(30),
+  /// Cash-on-delivery orders: deduct stock when the order is placed, or only when it ships.
+  "inventory.codStockCommit": z.enum(["order", "shipment"]).default("order"),
+  /// Payment methods offered at checkout (card only takes effect once a provider is configured).
+  "checkout.cardEnabled": z.boolean().default(true),
 });
 
 export type StoreSettings = z.infer<typeof settingsSchema>;

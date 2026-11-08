@@ -78,7 +78,7 @@ export function BagDrawer() {
               <Totals cart={cart} />
               <div className="grid gap-2">
                 <Link href={href("/bag")} onClick={close} className="btn btn-outline w-full">{B.viewBag}</Link>
-                <CheckoutButton cart={cart} />
+                <CheckoutButton cart={cart} onNavigate={close} />
               </div>
             </div>
           </>
