@@ -83,6 +83,7 @@ async function purge() {
   const products = await db.product.findMany({ where: { reference: { startsWith: "DEMO-" } }, select: { id: true } });
   await db.product.deleteMany({ where: { id: { in: products.map((p) => p.id) } } });
   await db.brand.deleteMany({ where: { slug: { in: DEMO_BRANDS.map((b) => b.slug) }, products: { none: {} } } });
+  await db.coupon.deleteMany({ where: { code: "DEMO10", redemptions: { none: {} } } });
   console.log(`Purged ${products.length} demo products.`);
 }
 
@@ -153,6 +154,12 @@ async function main() {
     n++;
   }
   await translateDemo();
+  // Demo discount code for testing the bag (remove before launch: --purge deletes it).
+  await db.coupon.upsert({
+    where: { code: "DEMO10" },
+    update: {},
+    create: { code: "DEMO10", description: "Demo code — 10% off full-price items over €50. Delete before launch.", type: "PERCENTAGE", value: 1000, minSubtotalMinor: 5000, usageLimitPerCustomer: 1 },
+  });
   console.log(`Created ${n} demo products (placeholders only).`);
 }
 

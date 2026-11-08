@@ -25,6 +25,13 @@ const schema = z
     S3_ACCESS_KEY_ID: z.string().default(""),
     S3_SECRET_ACCESS_KEY: z.string().default(""),
     S3_FORCE_PATH_STYLE: bool.default(true),
+    MAIL_DRIVER: z.enum(["log", "smtp"]).default("log"),
+    MAIL_FROM: z.string().default("MAREA <no-reply@example.com>"),
+    SMTP_HOST: z.string().default(""),
+    SMTP_PORT: z.coerce.number().int().positive().default(587),
+    SMTP_SECURE: bool.default(false),
+    SMTP_USER: z.string().default(""),
+    SMTP_PASSWORD: z.string().default(""),
   })
   .superRefine((env, ctx) => {
     if (env.STORAGE_DRIVER === "s3") {
@@ -32,9 +39,12 @@ const schema = z
         if (!env[k]) ctx.addIssue({ code: "custom", path: [k], message: `${k} is required when STORAGE_DRIVER=s3` });
       }
     }
+    if (env.MAIL_DRIVER === "smtp" && !env.SMTP_HOST) ctx.addIssue({ code: "custom", path: ["SMTP_HOST"], message: "SMTP_HOST is required when MAIL_DRIVER=smtp" });
     if (env.NODE_ENV === "production") {
       if (env.STORAGE_DRIVER === "local")
         ctx.addIssue({ code: "custom", path: ["STORAGE_DRIVER"], message: "Use S3-compatible storage in production" });
+      if (env.MAIL_DRIVER !== "smtp")
+        ctx.addIssue({ code: "custom", path: ["MAIL_DRIVER"], message: "Configure SMTP in production so verification and password-reset e-mails are delivered" });
       if (!env.COOKIE_SECURE)
         ctx.addIssue({ code: "custom", path: ["COOKIE_SECURE"], message: "COOKIE_SECURE must be true in production (HTTPS)" });
     }

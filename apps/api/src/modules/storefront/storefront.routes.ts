@@ -195,6 +195,14 @@ export function storefrontRouter(ctx: AppContext) {
     res.json(product);
   }));
 
+  /** Product cards by id (guest wishlist page). Unpublished ids are silently dropped. */
+  r.get("/product-cards", validated({ query: z.object({ locale: localeSchema, ids: csv }) }, async (_req, res, { query }) => {
+    const ids = query.ids.map(Number).filter((n) => Number.isInteger(n) && n > 0).slice(0, 100);
+    const rows = ids.length ? await ctx.db.product.findMany({ where: { id: { in: ids }, ...published(new Date()) }, include: productCardInclude(query.locale) }) : [];
+    const byId = new Map(rows.map((r) => [r.id, r]));
+    res.json({ items: ids.map((id) => byId.get(id)).filter((r): r is NonNullable<typeof r> => !!r).map((r) => toProductCard(r, ctx.storage)) });
+  }));
+
   // ───────────── Newsletter ─────────────
   const newsletterLimiter = rateLimit({
     windowMs: 60 * 60_000,

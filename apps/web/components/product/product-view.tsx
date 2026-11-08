@@ -5,6 +5,7 @@ import { formatMoney } from "@/lib/format";
 import { useI18n } from "@/lib/i18n-client";
 import type { ProductDetail } from "@/lib/types";
 import { useWishlist } from "@/lib/wishlist";
+import { ApiError, useStore } from "@/lib/store";
 import { HeartIcon } from "../icons";
 import { Gallery } from "./gallery";
 import { SizeGuide } from "./size-guide";
@@ -14,6 +15,8 @@ export function ProductView({ product }: { product: ProductDetail }) {
   const P = t.product;
   const money = (m: number) => formatMoney(m, product.currency, intl);
   const wishlist = useWishlist();
+  const { addToBag: add } = useStore();
+  const [adding, setAdding] = useState(false);
   const saved = wishlist.has(product.id);
 
   const variantAt = (color: string, size: string) => product.variants.find((v) => v.colorSlug === color && v.size === size);
@@ -49,10 +52,18 @@ export function ProductView({ product }: { product: ProductDetail }) {
     return () => io.disconnect();
   }, []);
 
-  const addToBag = () => {
-    if (!purchasable) return;
-    // The cart (MySQL-backed, server-validated) arrives in Phase 5.
-    setNotice(P.bagSoon(`${product.title}, ${current.name}, ${size} × ${qty}`));
+  const addToBag = async () => {
+    if (!purchasable || !variant || adding) return;
+    setAdding(true);
+    setNotice(null);
+    try {
+      await add(variant.id, qty);
+    } catch (e) {
+      // The server re-checks stock; explain if someone else just bought the last one.
+      setNotice(e instanceof ApiError && typeof e.details?.available === "number" ? t.bag.stockError(e.details.available) : t.auth.errors.generic);
+    } finally {
+      setAdding(false);
+    }
   };
 
   const price = (
@@ -181,7 +192,7 @@ export function ProductView({ product }: { product: ProductDetail }) {
               <output className="w-8 text-center tabular-nums" aria-live="polite">{qty}</output>
               <button type="button" className="h-full w-11 text-lg disabled:text-line" onClick={() => setQty((q) => Math.min(maxQty, q + 1))} disabled={!purchasable || qty >= maxQty} aria-label={P.increase}>+</button>
             </div>
-            <button type="button" onClick={addToBag} disabled={!purchasable} className="btn btn-solid order-last h-12 basis-full sm:order-none sm:basis-auto sm:flex-1 disabled:cursor-not-allowed disabled:border-line disabled:bg-sand disabled:text-mute">
+            <button type="button" onClick={addToBag} disabled={!purchasable || adding} aria-busy={adding} className="btn btn-solid order-last h-12 basis-full sm:order-none sm:basis-auto sm:flex-1 disabled:cursor-not-allowed disabled:border-line disabled:bg-sand disabled:text-mute">
               {buyLabel}
             </button>
             <button
@@ -194,7 +205,7 @@ export function ProductView({ product }: { product: ProductDetail }) {
               <HeartIcon filled={saved} />
             </button>
           </div>
-          {notice && <p role="status" className="mt-4 border-l-2 border-claret pl-3 text-small text-ink/80">{notice}</p>}
+          {notice && <p role="alert" className="mt-4 border-l-2 border-claret pl-3 text-small text-ink/80">{notice}</p>}
 
           <p className="mt-6 text-micro text-mute">
             {P.ref} {variant?.sku ?? product.reference}

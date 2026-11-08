@@ -7,13 +7,16 @@ import helmet from "helmet";
 import { pinoHttp } from "pino-http";
 import { trustedOrigins } from "./config/env.js";
 import type { AppContext } from "./context.js";
-import { requireAdmin } from "./middleware/auth.js";
+import { loadCustomer, requireAdmin } from "./middleware/auth.js";
 import { errorHandler, notFoundHandler, originCheck } from "./middleware/http.js";
 import { adminAuthRouter } from "./modules/auth/admin-auth.routes.js";
 import { productsAdminRouter } from "./modules/catalog/admin/products.routes.js";
 import { taxonomyAdminRouter } from "./modules/catalog/admin/taxonomy.routes.js";
 import { storefrontRouter } from "./modules/storefront/storefront.routes.js";
 import { translationsAdminRouter } from "./modules/i18n/translations-admin.routes.js";
+import { customerAuthRouter } from "./modules/customers/auth.routes.js";
+import { accountRouter } from "./modules/customers/account.routes.js";
+import { cartRouter } from "./modules/cart/cart.routes.js";
 
 export function createApp(ctx: AppContext) {
   const app = express();
@@ -76,6 +79,10 @@ export function createApp(ctx: AppContext) {
   });
 
   api.use("/store", storefrontRouter(ctx));
+  const customer = loadCustomer(ctx);
+  api.use("/auth", customer, customerAuthRouter(ctx));
+  api.use("/account", customer, accountRouter(ctx));
+  api.use("/cart", customer, cartRouter(ctx));
   api.use("/admin/auth", adminAuthRouter(ctx));
 
   const admin = Router();

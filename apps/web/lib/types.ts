@@ -184,3 +184,67 @@ export interface ProductDetail {
   };
   related: ProductCard[];
 }
+
+export interface Customer {
+  id: number;
+  email: string;
+  firstName: string | null;
+  lastName: string | null;
+  phone: string | null;
+  emailVerified: boolean;
+  marketingOptIn: boolean;
+  locale: "en" | "me";
+}
+
+export type LineIssue = "UNAVAILABLE" | "OUT_OF_STOCK" | "INSUFFICIENT_STOCK";
+export type CouponError = "COUPON_INVALID" | "COUPON_NOT_STARTED" | "COUPON_EXPIRED" | "COUPON_USAGE_LIMIT" | "COUPON_ALREADY_USED" | "COUPON_MIN_SUBTOTAL" | "COUPON_NOT_ELIGIBLE";
+
+export interface CartLine {
+  id: number;
+  variantId: number;
+  productId: number;
+  slug: string;
+  title: string;
+  brand: string | null;
+  sku: string;
+  color: { name: string; slug: string; hex: string };
+  size: string;
+  image: { url: string | null; isPlaceholder: boolean; alt: string } | null;
+  unitPriceMinor: number;
+  compareAtPriceMinor: number | null;
+  quantity: number;
+  lineTotalMinor: number;
+  maxQuantity: number;
+  issue: LineIssue | null;
+}
+
+export interface Cart {
+  id: number | null;
+  currency: string;
+  itemCount: number;
+  lines: CartLine[];
+  subtotalMinor: number;
+  discountMinor: number;
+  shipping: { code: string; estimateMinor: number; freeOverMinor: number | null; freeShippingRemainingMinor: number | null } | null;
+  totalMinor: number;
+  vatMinor: number;
+  coupon: { code: string; type: string; valid: boolean; error: CouponError | null; minSubtotalMinor: number | null } | null;
+  canCheckout: boolean;
+}
+
+export interface Address {
+  id: number;
+  label: string | null;
+  firstName: string;
+  lastName: string;
+  company: string | null;
+  line1: string;
+  line2: string | null;
+  city: string;
+  postalCode: string;
+  region: string | null;
+  countryCode: string;
+  phone: string | null;
+  isDefaultShipping: boolean;
+  isDefaultBilling: boolean;
+}

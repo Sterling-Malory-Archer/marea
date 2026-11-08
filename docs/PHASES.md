@@ -6,8 +6,8 @@
 | 2 | Schema, migrations, seeds, product administration (API) | ✅ Done |
 | 3 | Design system, header/nav, announcement bar, homepage | ✅ Done |
 | 4 | Bilingual routing (EN / Montenegrin), catalogue pages, filters, search, product detail, variants UI | ✅ Done |
-| 5 | Customer accounts, auth, cart, wishlist (DB-backed) | Next |
-| 6 | Checkout, orders, inventory reservations | |
+| 5 | Customer accounts, auth, cart, wishlist (DB-backed) | ✅ Done |
+| 6 | Checkout, orders, inventory reservations | Next |
 | 7 | Payment provider + webhooks | Needs merchant account (see below) |
 | 8 | Admin dashboard UI, e-mails, shipping | |
 | 9 | SEO, performance, security hardening, responsive QA | |
@@ -58,6 +58,23 @@
 - [x] SEO groundwork: canonical + hreflang on every page, Product and BreadcrumbList structured data, filtered and search pages set to `noindex`.
 - [x] 44 integration tests (13 new) — all passing. Verified at 1440 px and 390 px in both languages.
 - [x] `pnpm setup:local` one-command local environment (Docker MySQL) — written for the owner's machine; not executable in the build sandbox (no Docker daemon there).
+
+## Phase 5 — acceptance
+
+- [x] Registration (terms consent, optional marketing consent, chosen e-mail language), sign-in, sign-out; Argon2id hashes; hashed server-side sessions in `httpOnly`/`SameSite=Lax` cookies; session rotation on sign-in; lockout after 8 failures; generic errors (no account enumeration on sign-in or password reset).
+- [x] E-mail verification and password reset with single-use, hashed, expiring tokens (48 h / 1 h); reset signs out every device and sends a "password changed" notice. Bilingual e-mail templates.
+- [x] Mailer with `MAIL_DRIVER=log` (development: e-mails written to the API log, never claimed as sent) and `smtp` (production; the API refuses to boot in production without it).
+- [x] Account: overview, personal details, e-mail language, marketing preference, password change (other devices signed out), address book (one default, max 20, strictly per-customer), order history and order detail (scoped to the owner), account deletion request (account disabled immediately, newsletter unsubscribed, confirmation e-mail; anonymisation by staff in Phase 8).
+- [x] Bag: guest bags via a signed `httpOnly` cookie (only a hash stored), customer bags in MySQL, merge on sign-in (quantities capped by stock and a 10-per-line limit), persistence across sessions/devices. Every response re-prices from the catalogue and re-checks stock; client-sent prices are ignored; lines that became unavailable are flagged and block checkout.
+- [x] Discount codes: percentage, fixed amount, free delivery; date window, global and per-customer limits, minimum spend (kept pending until reached), sale-item exclusion; delivery estimate with free-delivery progress; VAT portion shown.
+- [x] Slide-out bag drawer on add, full bag page, header count; wishlist saved to the account and merged from the browser on sign-in.
+- [x] 67 integration tests (23 new) — all passing; end-to-end browser run (add → bag → code → register → verify → address → sign out/in, plus Montenegrin mobile) with no page errors.
+- [ ] Real e-mail delivery: needs an SMTP account (owner action, see below).
+
+## Owner actions before launch
+
+- **SMTP provider** for transactional e-mail (e.g. Postmark, Mailgun, Amazon SES, or your host's SMTP), plus SPF/DKIM DNS records for the sending domain. Set `MAIL_DRIVER=smtp` and the `SMTP_*` variables.
+- Delete the `DEMO10` code (or run `pnpm --filter @marea/db seed:demo --purge`).
 
 ## Phase 7 prerequisites (owner action)
 

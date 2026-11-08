@@ -30,6 +30,11 @@
   --breakpoint-xs: 26rem;
 }
 
+@keyframes slide-in {
+  from { transform: translateX(100%); }
+  to { transform: translateX(0); }
+}
+
 @keyframes fade {
   from { opacity: 0; }
   to { opacity: 1; }

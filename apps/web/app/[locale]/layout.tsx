@@ -9,6 +9,8 @@ import { Header } from "@/components/header";
 import { getLayout } from "@/lib/api";
 import { isLocale, LOCALE_META, LOCALES, type Locale } from "@/lib/i18n";
 import { I18nProvider } from "@/lib/i18n-client";
+import { StoreProvider } from "@/lib/store";
+import { BagDrawer } from "@/components/bag/bag-drawer";
 import { getMessages } from "@/lib/messages";
 
 // Rendered per request (with a short data cache) so admin edits appear quickly.
@@ -46,6 +48,7 @@ export default async function LocaleLayout({ children, params }: Props & { child
     <html lang={LOCALE_META[locale].htmlLang}>
       <body className="min-h-svh">
         <I18nProvider locale={locale}>
+          <StoreProvider>
           <a href="#main" className="sr-only focus:not-sr-only focus:fixed focus:left-4 focus:top-4 focus:z-[60] focus:bg-paper focus:px-4 focus:py-2">
             {t.nav.skip}
           </a>
@@ -53,6 +56,8 @@ export default async function LocaleLayout({ children, params }: Props & { child
           <Header storeName={layout.settings.storeName} navigation={layout.navigation} />
           <main id="main">{children}</main>
           <Footer layout={layout} locale={locale} />
+          <BagDrawer />
+          </StoreProvider>
         </I18nProvider>
       </body>
     </html>

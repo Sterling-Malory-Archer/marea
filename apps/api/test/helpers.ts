@@ -9,6 +9,7 @@ import { loadEnv as parseEnv } from "../src/config/env.js";
 import { createLogger } from "../src/lib/logger.js";
 import { hashPassword } from "../src/modules/auth/password.js";
 import { createStorage } from "../src/modules/storage/storage.js";
+import { LogMailer } from "../src/modules/mail/mailer.js";
 
 loadEnv({ path: path.resolve(import.meta.dirname, "../../../.env"), quiet: true });
 
@@ -26,7 +27,9 @@ export const env = parseEnv({
 });
 export const db = createPrismaClient(env.DATABASE_URL);
 export const storage = createStorage(env);
-export const app = createApp({ env, db, log: createLogger("silent"), storage });
+const log = createLogger("silent");
+export const mailer = new LogMailer(log);
+export const app = createApp({ env, db, log, storage, mailer });
 
 let seq = 0;
 export const unique = (p: string) => `${p}${Date.now().toString(36)}${(seq++).toString(36)}`;

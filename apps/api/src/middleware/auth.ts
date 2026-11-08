@@ -31,3 +31,18 @@ export function assertCan(req: Express.Request, permission: Permission) {
   if (!req.admin) throw unauthorized();
   if (!can(req.admin.user.role, permission)) throw forbidden();
 }
+
+/** Attaches the customer session when present; never rejects. */
+export function loadCustomer(ctx: AppContext): RequestHandler {
+  return async (req, _res, next) => {
+    try {
+      const session = await readSession(ctx, req, { admin: false });
+      if (session && session.user.status === "ACTIVE") req.customer = session;
+      next();
+    } catch (err) {
+      next(err);
+    }
+  };
+}
+
+export const requireCustomer: RequestHandler = (req, _res, next) => (req.customer ? next() : next(unauthorized("Sign in to continue")));

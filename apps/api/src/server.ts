@@ -3,15 +3,17 @@ import { createApp } from "./app.js";
 import { loadEnv } from "./config/env.js";
 import { createLogger } from "./lib/logger.js";
 import { createStorage } from "./modules/storage/storage.js";
+import { createMailer } from "./modules/mail/mailer.js";
 
 const env = loadEnv();
 const log = createLogger(env.LOG_LEVEL);
 const db = createPrismaClient(env.DATABASE_URL);
 const storage = createStorage(env);
 
-const app = createApp({ env, db, log, storage });
+const mailer = createMailer(env, log);
+const app = createApp({ env, db, log, storage, mailer });
 const server = app.listen(env.API_PORT, () => {
-  log.info({ port: env.API_PORT, storage: storage.driver, env: env.NODE_ENV }, "MAREA API listening");
+  log.info({ port: env.API_PORT, storage: storage.driver, mail: mailer.driver, env: env.NODE_ENV }, "MAREA API listening");
 });
 
 async function shutdown(signal: string) {

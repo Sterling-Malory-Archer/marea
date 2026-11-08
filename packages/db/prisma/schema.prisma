@@ -50,6 +50,8 @@ model User {
   status              UserStatus @default(ACTIVE)
   emailVerifiedAt     DateTime?
   marketingOptIn      Boolean    @default(false)
+  /// Preferred language for e-mails ("en" | "me").
+  locale              String     @default("en") @db.VarChar(10)
   deletionRequestedAt DateTime?
   lastLoginAt         DateTime?
   failedLoginCount    Int        @default(0)

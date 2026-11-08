@@ -8,6 +8,7 @@ import { LOCALE_COOKIE, LOCALE_META, LOCALES, localePath, stripLocale } from "@/
 import { useI18n } from "@/lib/i18n-client";
 import type { NavCategory } from "@/lib/types";
 import { useWishlist } from "@/lib/wishlist";
+import { useStore } from "@/lib/store";
 import { BagIcon, ChevronIcon, CloseIcon, HeartIcon, MenuIcon, SearchIcon, UserIcon } from "./icons";
 
 type NavItem = { label: string; href: string; children?: NavCategory["children"]; accent?: boolean; path?: string };
@@ -16,6 +17,8 @@ export function Header({ storeName, navigation }: { storeName: string; navigatio
   const [scrolled, setScrolled] = useState(false);
   const [drawerOpen, setDrawerOpen] = useState(false);
   const { count: wishCount } = useWishlist();
+  const { cart, setDrawerOpen: openBag, user } = useStore();
+  const bagCount = cart?.itemCount ?? 0;
   const pathname = usePathname();
   const { t, href } = useI18n();
   const basePath = stripLocale(pathname);
@@ -105,16 +108,26 @@ export function Header({ storeName, navigation }: { storeName: string; navigatio
           <Link href={href("/search")} className="p-2" aria-label={t.nav.search}>
             <SearchIcon />
           </Link>
-          <Link href={href("/account")} className="hidden p-2 sm:block" aria-label={t.nav.account}>
+          <Link href={href(user ? "/account" : "/account/login")} className="hidden p-2 sm:block" aria-label={t.nav.account}>
             <UserIcon />
           </Link>
           <Link href={href("/wishlist")} className="relative p-2" aria-label={t.wishlistCount(wishCount)}>
             <HeartIcon />
             {wishCount > 0 && <CountBadge n={wishCount} />}
           </Link>
-          {/* Bag count is wired to the MySQL cart in Phase 5. */}
-          <Link href={href("/bag")} className="relative -mr-2 p-2" aria-label={t.nav.bag}>
+          <Link
+            href={href("/bag")}
+            onClick={(e) => {
+              // Open the drawer in place; the link still works without JavaScript.
+              if (e.metaKey || e.ctrlKey || e.shiftKey) return;
+              e.preventDefault();
+              openBag(true);
+            }}
+            className="relative -mr-2 p-2"
+            aria-label={`${t.nav.bag}${bagCount ? `, ${bagCount}` : ""}`}
+          >
             <BagIcon />
+            {bagCount > 0 && <CountBadge n={bagCount} />}
           </Link>
         </div>
       </div>
