@@ -184,6 +184,115 @@ async function content() {
   }
 }
 
+
+// ── Montenegrin ("me") translations of base content ─────────────────────────
+// Only inserts missing rows: never overwrites text an administrator has edited.
+const ME = "me";
+async function translations() {
+  await db.storeSetting.upsert({ where: { key: "store.tagline.me" }, update: {}, create: { key: "store.tagline.me", value: "Savremena garderoba, promišljeno." } });
+
+  const categories: Record<string, [string, string?]> = {
+    women: ["Žene", "Odjeća za ovu sezonu, od lepršavih haljina do krojenih kaputa."],
+    "women/dresses": ["Haljine"], "women/tops": ["Topovi"], "women/shirts": ["Košulje"], "women/trousers": ["Pantalone"],
+    "women/jeans": ["Farmerke"], "women/skirts": ["Suknje"], "women/jackets": ["Jakne"], "women/coats": ["Kaputi"], "women/knitwear": ["Trikotaža"],
+    men: ["Muškarci", "Promišljeni osnovni komadi i gornja odjeća koja traje."],
+    "men/t-shirts": ["Majice"], "men/shirts": ["Košulje"], "men/trousers": ["Pantalone"], "men/jeans": ["Farmerke"],
+    "men/jackets": ["Jakne"], "men/coats": ["Kaputi"], "men/knitwear": ["Trikotaža"],
+    shoes: ["Obuća", "Obuća za svaki dan i svaku priliku."],
+    "shoes/sneakers": ["Patike"], "shoes/boots": ["Čizme"], "shoes/heels": ["Cipele na štiklu"], "shoes/flats": ["Ravne cipele"], "shoes/sandals": ["Sandale"],
+    bags: ["Torbe", "Kožne i tekstilne torbe bezvremenskih oblika."],
+    "bags/shoulder-bags": ["Torbe na rame"], "bags/tote-bags": ["Tote torbe"], "bags/crossbody-bags": ["Crossbody torbe"], "bags/clutches": ["Pismo torbice"],
+    accessories: ["Aksesoari", "Završni detalji."],
+    "accessories/belts": ["Kaiševi"], "accessories/wallets": ["Novčanici"], "accessories/jewellery": ["Nakit"], "accessories/other-accessories": ["Ostali aksesoari"],
+  };
+  for (const [path, [name, description]] of Object.entries(categories)) {
+    const c = await db.category.findUnique({ where: { path } });
+    if (c) await db.categoryTranslation.upsert({ where: { categoryId_locale: { categoryId: c.id, locale: ME } }, update: {}, create: { categoryId: c.id, locale: ME, name, description: description ?? null } });
+  }
+
+  const colors: Record<string, string> = {
+    black: "Crna", ivory: "Slonovača", white: "Bijela", stone: "Kamen", camel: "Kamel", tan: "Konjak", chocolate: "Čokoladna",
+    burgundy: "Bordo", navy: "Teget", sky: "Nebesko plava", olive: "Maslinasta", sage: "Žalfija", "grey-melange": "Siva melanž",
+    charcoal: "Antracit", taupe: "Sivo-smeđa", gold: "Zlatna", silver: "Srebrna",
+  };
+  for (const [slug, name] of Object.entries(colors)) {
+    const c = await db.color.findUnique({ where: { slug } });
+    if (c) await db.colorTranslation.upsert({ where: { colorId_locale: { colorId: c.id, locale: ME } }, update: {}, create: { colorId: c.id, locale: ME, name } });
+  }
+
+  const collections: Record<string, { title: string; eyebrow?: string; description: string }> = {
+    "new-season": { title: "Nova sezona", eyebrow: "JZ26", description: "Najnoviji komadi za jesen i zimu." },
+    "everyday-essentials": { title: "Osnove za svaki dan", eyebrow: "Garderoba", description: "Temelji kojima ćete se vraćati svakog jutra." },
+    "contemporary-classics": { title: "Savremeni klasici", eyebrow: "Krojenje", description: "Poznati oblici, iznova promišljeni." },
+    bestsellers: { title: "Najtraženije", description: "Komadi koje naši kupci najčešće biraju." },
+  };
+  for (const [slug, t] of Object.entries(collections)) {
+    const c = await db.collection.findUnique({ where: { slug } });
+    if (c) await db.collectionTranslation.upsert({ where: { collectionId_locale: { collectionId: c.id, locale: ME } }, update: {}, create: { collectionId: c.id, locale: ME, title: t.title, eyebrow: t.eyebrow ?? null, description: t.description } });
+  }
+
+  const heroByHeadline: Record<string, { eyebrow: string; headline: string; body: string; imageAlt: string; secondary?: string }> = {
+    "The Quiet Season": { eyebrow: "Jesen / zima 2026", headline: "Tiha sezona", body: "Mekano krojenje, češljana vuna i paleta pozajmljena od zimske obale. Komadi stvoreni da se nose, pa ponovo nose.", imageAlt: "Fotografija kampanje — model u kaputu od kamel vune", secondary: "Pogledajte lookbook" },
+    "Tailoring, Unhurried": { eyebrow: "Izbor", headline: "Krojenje bez žurbe", body: "Opušteni kostimi i lepršave košulje za dane koji se kreću između kancelarije i večeri.", imageAlt: "Fotografija kampanje — opušteno odijelo boje kamena" },
+  };
+  for (const h of await db.heroSlide.findMany()) {
+    const t = heroByHeadline[h.headline];
+    if (t) await db.heroSlideTranslation.upsert({ where: { heroSlideId_locale: { heroSlideId: h.id, locale: ME } }, update: {}, create: { heroSlideId: h.id, locale: ME, eyebrow: t.eyebrow, headline: t.headline, body: t.body, primaryCtaLabel: "Pogledajte kolekciju", secondaryCtaLabel: t.secondary ?? null, imageAlt: t.imageAlt } });
+  }
+
+  const announcements: Record<string, [string, string?]> = {
+    "Complimentary delivery on orders over €100": ["Besplatna dostava za porudžbine preko 100 €"],
+    "Autumn / Winter 2026 is now online": ["Kolekcija jesen / zima 2026 je sada online", "Otkrijte"],
+    "Free exchanges within 14 days": ["Besplatna zamjena u roku od 14 dana", "Detalji"],
+  };
+  for (const a of await db.announcementMessage.findMany()) {
+    const t = announcements[a.message];
+    if (t) await db.announcementTranslation.upsert({ where: { announcementId_locale: { announcementId: a.id, locale: ME } }, update: {}, create: { announcementId: a.id, locale: ME, message: t[0], linkLabel: t[1] ?? null } });
+  }
+
+  const blocks: Record<string, { eyebrow?: string; title: string; body: string; ctaLabel?: string; imageAlt?: string }> = {
+    "Dressing for the Adriatic winter": { eyebrow: "Iz žurnala", title: "Oblačenje za jadransku zimu", body: "Blagi dani, oštre večeri i vjetar sa zaliva. Kratak vodič kroz slojevito oblačenje vune, kože i pamuka za obalu od novembra do marta — i kroz kupovinu manje, ali boljih komada.", ctaLabel: "Pročitajte priču", imageAlt: "Editorijalna fotografija — žena šeta kamenim šetalištem uz more" },
+    "Free exchanges": { title: "Besplatna zamjena", body: "U roku od 14 dana od isporuke" },
+    "Fast delivery": { title: "Brza dostava", body: "1–3 radna dana širom Crne Gore" },
+    "Free delivery": { title: "Besplatna dostava", body: "Za porudžbine preko 100 €" },
+    "Cash on delivery": { title: "Plaćanje pouzećem", body: "Platite kuriru prilikom preuzimanja" },
+  };
+  for (const b of await db.contentBlock.findMany()) {
+    const t = blocks[b.title];
+    if (t) await db.contentBlockTranslation.upsert({ where: { contentBlockId_locale: { contentBlockId: b.id, locale: ME } }, update: {}, create: { contentBlockId: b.id, locale: ME, eyebrow: t.eyebrow ?? null, title: t.title, body: t.body, ctaLabel: t.ctaLabel ?? null, imageAlt: t.imageAlt ?? null } });
+  }
+}
+
+// ── Size guides (indicative conversions; column keys are translated in the UI) ──
+async function sizeGuides() {
+  const guides: Record<string, { columns: string[]; rows: string[][]; note: string }> = {
+    alpha: {
+      columns: ["size", "eu", "it", "uk", "us"],
+      rows: [["XS", "34", "38", "6", "2"], ["S", "36", "40", "8", "4"], ["M", "38", "42", "10", "6"], ["L", "40", "44", "12", "8"], ["XL", "42", "46", "14", "10"], ["XXL", "44", "48", "16", "12"]],
+      note: "indicative",
+    },
+    "it-numeric": {
+      columns: ["it", "eu", "uk", "us"],
+      rows: ["36", "38", "40", "42", "44", "46", "48", "50", "52", "54"].map((it) => [it, String(+it - 4), String(+it - 32), String(+it - 36)]),
+      note: "indicative",
+    },
+    waist: {
+      columns: ["waistIn", "waistCm"],
+      rows: ["24", "25", "26", "27", "28", "29", "30", "31", "32", "33", "34", "36", "38"].map((w) => [w, String(Math.round(+w * 2.54))]),
+      note: "measureWaist",
+    },
+    "eu-shoe": {
+      columns: ["eu", "uk", "footCm"],
+      rows: [["35", "2.5", "22.5"], ["36", "3.5", "23"], ["37", "4", "23.5"], ["38", "5", "24.5"], ["39", "6", "25"], ["40", "6.5", "25.5"], ["41", "7.5", "26.5"], ["42", "8", "27"], ["43", "9", "27.5"], ["44", "9.5", "28.5"], ["45", "10.5", "29"], ["46", "11", "29.5"]],
+      note: "measureFoot",
+    },
+  };
+  for (const [code, guide] of Object.entries(guides)) {
+    const scale = await db.sizeScale.findUnique({ where: { code } });
+    if (scale && scale.guide == null) await db.sizeScale.update({ where: { id: scale.id }, data: { guide } });
+  }
+}
+
 async function owner() {
   const email = process.env.SEED_ADMIN_EMAIL?.trim().toLowerCase();
   const password = process.env.SEED_ADMIN_PASSWORD;
@@ -215,6 +324,8 @@ async function main() {
   await categories();
   await shipping();
   await content();
+  await translations();
+  await sizeGuides();
   await owner();
   console.log("Done.");
 }

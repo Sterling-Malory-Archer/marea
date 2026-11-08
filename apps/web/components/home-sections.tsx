@@ -1,13 +1,16 @@
 import Image from "next/image";
 import Link from "next/link";
+import { localePath, type Locale } from "@/lib/i18n";
+import { getMessages } from "@/lib/messages";
 import type { CollectionTile, ContentBlock, ProductCard as Card } from "@/lib/types";
 import { Placeholder } from "./placeholder";
 import { ProductCard } from "./product-card";
 
-export function ServiceStrip({ items }: { items: ContentBlock[] }) {
+export function ServiceStrip({ items, locale }: { items: ContentBlock[]; locale: Locale }) {
   if (!items.length) return null;
+  const t = getMessages(locale);
   return (
-    <section aria-label="Our service" className="border-y border-line">
+    <section aria-label={t.home.ourService} className="border-y border-line">
       <ul className="shell grid grid-cols-2 lg:grid-cols-4">
         {items.map((s, i) => (
           <li
@@ -25,7 +28,7 @@ export function ServiceStrip({ items }: { items: ContentBlock[] }) {
   );
 }
 
-function SectionHeading({ title, href, linkLabel, id }: { title: string; href?: string; linkLabel?: string; id: string }) {
+export function SectionHeading({ title, href, linkLabel, id }: { title: string; href?: string; linkLabel?: string; id: string }) {
   return (
     <div className="mb-7 flex items-end justify-between gap-6 lg:mb-10">
       <h2 id={id} className="display text-[clamp(2rem,3.6vw,3.25rem)]">
@@ -33,7 +36,7 @@ function SectionHeading({ title, href, linkLabel, id }: { title: string; href?: 
       </h2>
       {href && (
         <Link href={href} className="link-underline shrink-0 text-small">
-          {linkLabel ?? "View all"}
+          {linkLabel}
         </Link>
       )}
     </div>
@@ -41,24 +44,25 @@ function SectionHeading({ title, href, linkLabel, id }: { title: string; href?: 
 }
 
 /** Asymmetric collection grid: one tall feature beside two stacked tiles. */
-export function FeaturedCollections({ items }: { items: CollectionTile[] }) {
+export function FeaturedCollections({ items, locale }: { items: CollectionTile[]; locale: Locale }) {
   if (!items.length) return null;
+  const t = getMessages(locale);
   const tints = ["#DCD3C6", "#CFCAC0", "#D9CFCB", "#D3D4CC"];
   return (
     <section aria-labelledby="collections-title" className="shell py-16 lg:py-24">
-      <SectionHeading id="collections-title" title="The collections" />
+      <SectionHeading id="collections-title" title={t.home.collections} />
       <div className="grid gap-x-6 gap-y-10 md:grid-cols-12 lg:gap-x-10">
         {items.slice(0, 3).map((c, i) => (
           <Link
             key={c.id}
-            href={`/collections/${c.slug}`}
+            href={localePath(locale, `/collections/${c.slug}`)}
             className={`group block ${i === 0 ? "md:col-span-7 md:row-span-2" : "md:col-span-5"}`}
           >
             <div className={`relative overflow-hidden ${i === 0 ? "aspect-[4/5] md:aspect-auto md:h-full md:min-h-[38rem]" : "aspect-[16/10]"}`}>
               {c.imageUrl ? (
                 <Image src={c.imageUrl} alt="" fill sizes="(min-width: 768px) 55vw, 100vw" className="object-cover transition-transform duration-700 ease-out-soft group-hover:scale-[1.02]" />
               ) : (
-                <Placeholder alt={`${c.title} collection`} tint={tints[i % tints.length]} className="absolute inset-0" label="Placeholder — editorial photograph" />
+                <Placeholder alt={c.title} tint={tints[i % tints.length]} className="absolute inset-0" label={t.placeholder.editorial} suffix={t.placeholder.suffix} />
               )}
             </div>
             <div className="mt-4 flex items-baseline justify-between gap-4">
@@ -66,7 +70,7 @@ export function FeaturedCollections({ items }: { items: CollectionTile[] }) {
                 {c.eyebrow && <p className="text-micro text-mute">{c.eyebrow}</p>}
                 <h3 className="display mt-1 text-[clamp(1.6rem,2.4vw,2.25rem)]">{c.title}</h3>
               </div>
-              <span className="link-underline shrink-0 text-small">Shop the edit</span>
+              <span className="link-underline shrink-0 text-small">{t.home.shopEdit}</span>
             </div>
           </Link>
         ))}
@@ -75,17 +79,18 @@ export function FeaturedCollections({ items }: { items: CollectionTile[] }) {
   );
 }
 
-export function ProductRail({ id, title, href, products, locale }: { id: string; title: string; href?: string; products: Card[]; locale: string }) {
+export function ProductRail({ id, title, href, products, locale }: { id: string; title: string; href?: string; products: Card[]; locale: Locale }) {
   if (!products.length) return null;
+  const t = getMessages(locale);
   // Show complete rows only (4 per row on desktop) so the grid never ends ragged.
   const shown = products.length >= 4 ? products.slice(0, Math.min(8, products.length - (products.length % 4))) : products;
   return (
     <section aria-labelledby={id} className="shell py-16 lg:py-24">
-      <SectionHeading id={id} title={title} href={href} />
+      <SectionHeading id={id} title={title} href={href ? localePath(locale, href) : undefined} linkLabel={t.home.viewAll} />
       <ul className="grid grid-cols-2 gap-x-3 gap-y-10 sm:gap-x-5 lg:grid-cols-4 lg:gap-x-6 lg:gap-y-14">
         {shown.map((p) => (
           <li key={p.id}>
-            <ProductCard product={p} locale={locale} />
+            <ProductCard product={p} />
           </li>
         ))}
       </ul>
@@ -94,8 +99,9 @@ export function ProductRail({ id, title, href, products, locale }: { id: string;
 }
 
 /** Magazine-style feature: photograph bleeds to the edge, text sits on a sand field. */
-export function Editorial({ block }: { block: ContentBlock | null }) {
+export function Editorial({ block, locale }: { block: ContentBlock | null; locale: Locale }) {
   if (!block) return null;
+  const t = getMessages(locale);
   return (
     <section aria-labelledby="editorial-title" className="bg-sand">
       <div className="grid lg:grid-cols-12">
@@ -103,7 +109,7 @@ export function Editorial({ block }: { block: ContentBlock | null }) {
           {block.imageUrl && !block.imageIsPlaceholder ? (
             <Image src={block.imageUrl} alt={block.imageAlt ?? ""} fill sizes="(min-width: 1024px) 58vw, 100vw" className="object-cover" />
           ) : (
-            <Placeholder alt={block.imageAlt ?? block.title} tint="#D3CCC1" className="absolute inset-0" label="Placeholder — lifestyle photograph" />
+            <Placeholder alt={block.imageAlt ?? block.title} tint="#D3CCC1" className="absolute inset-0" label={t.placeholder.lifestyle} suffix={t.placeholder.suffix} />
           )}
         </div>
         <div className="flex items-center px-5 py-14 sm:px-10 lg:col-span-5 lg:px-16 xl:px-24">
@@ -114,8 +120,8 @@ export function Editorial({ block }: { block: ContentBlock | null }) {
             </h2>
             {block.body && <p className="mt-6 font-display text-lead leading-[1.85] text-ink/90">{block.body}</p>}
             {block.ctaUrl && (
-              <Link href={block.ctaUrl} className="link-underline mt-8 inline-block text-small">
-                {block.ctaLabel ?? "Read more"}
+              <Link href={localePath(locale, block.ctaUrl)} className="link-underline mt-8 inline-block text-small">
+                {block.ctaLabel ?? t.home.readMore}
               </Link>
             )}
           </div>

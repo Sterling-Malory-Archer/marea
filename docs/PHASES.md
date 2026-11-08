@@ -5,8 +5,8 @@
 | 1 | Foundation, MySQL connection, structure, CI | ✅ Done (Abacus checks open — see DEPLOYMENT.md) |
 | 2 | Schema, migrations, seeds, product administration (API) | ✅ Done |
 | 3 | Design system, header/nav, announcement bar, homepage | ✅ Done |
-| 4 | Bilingual routing (EN / Montenegrin), catalogue pages, filters, search, product detail, variants UI | Next |
-| 5 | Customer accounts, auth, cart, wishlist (DB-backed) | |
+| 4 | Bilingual routing (EN / Montenegrin), catalogue pages, filters, search, product detail, variants UI | ✅ Done |
+| 5 | Customer accounts, auth, cart, wishlist (DB-backed) | Next |
 | 6 | Checkout, orders, inventory reservations | |
 | 7 | Payment provider + webhooks | Needs merchant account (see below) |
 | 8 | Admin dashboard UI, e-mails, shipping | |
@@ -43,8 +43,21 @@
 - [x] Placeholders are labelled on screen and to screen readers; never presented as merchandise.
 - [x] Verified at 1440 px and 390 px.
 
-Links to category, product, search, account, bag and help pages currently show the styled 404 page; those
-pages are built in Phases 4–8.
+
+
+## Phase 4 — acceptance
+
+- [x] English at `/…`, Montenegrin at `/me/…`; `/en/…` redirects to the canonical URL; language switcher in header, mobile menu and footer; choice remembered for the bare homepage only (no browser-language redirects).
+- [x] Translation tables for products, categories, collections, colours, hero slides, announcements and content blocks (migration `translations_and_size_guides`); missing translations fall back to English per field.
+- [x] Admin translation API: `PUT/GET/DELETE /api/admin/translations/:entity/:id/:locale`, validated, permission-checked, audited.
+- [x] Montenegrin content seeded for all base content and the demo products; UI copy in both languages.
+- [x] Faceted listing API (`GET /api/store/products`): category (incl. subcategories), collection, new, sale, search; filters for brand, size (grouped by size system), colour, price range, availability and sale; size + colour must match the same in-stock variant; facet counts exclude their own filter; sorting (newest, price ↑↓, bestselling, relevance); pagination.
+- [x] Search: MySQL FULLTEXT over English and Montenegrin titles/descriptions (prefix matching), plus brand, reference and SKU.
+- [x] Pages: category, new arrivals, sale, collection, search — breadcrumbs, description, product count, subcategory chips, desktop filter sidebar, mobile filter drawer, sort, removable filter chips, pagination, empty states; filter state lives in the URL (shareable, back-button safe).
+- [x] Product page: gallery (desktop grid, mobile swipe, full-screen lightbox with zoom), colourway images, size buttons with unavailable sizes disabled, low-stock message, quantity limited to available stock, size guide per size system, description / composition & care / delivery / returns, related products, sticky mobile purchase bar. "Add to bag" validates the selection; the bag itself is Phase 5.
+- [x] SEO groundwork: canonical + hreflang on every page, Product and BreadcrumbList structured data, filtered and search pages set to `noindex`.
+- [x] 44 integration tests (13 new) — all passing. Verified at 1440 px and 390 px in both languages.
+- [x] `pnpm setup:local` one-command local environment (Docker MySQL) — written for the owner's machine; not executable in the build sandbox (no Docker daemon there).
 
 ## Phase 7 prerequisites (owner action)
 
@@ -60,4 +73,5 @@ currencies (EUR), refund API access. Until then the footer lists only cash on de
 | 2026-11-08 | Business country: **Montenegro** — EUR, 21% VAT (VAT-inclusive prices), Montenegro as the primary delivery zone. |
 | 2026-11-08 | Storefront languages: **English and Montenegrin**. Plan for Phase 4: English at the root URLs and Montenegrin under `/me/…` with `hreflang` alternates; translation tables for product, category, collection and homepage content (`*_translations`, one row per locale) so every text field the admin edits exists in both languages; UI strings in typed message files; prices and dates formatted per locale. Montenegrin uses Latin script (č, ć, š, ž, đ — covered by the bundled font subsets). |
 | 2026-11-08 | **English is the default language** (`/` serves English); visitors switch to Montenegrin with a language selector in the header and footer. The choice is remembered in a cookie; the site never auto-redirects based on browser language, so shared links always open in the language they were shared in. |
+| 2026-11-08 | Language tags: `<html lang="sr-Latn-ME">` for Montenegrin pages (screen readers have no `cnr` voice yet) and `hreflang="sr-ME"` (understood by search engines). Change in `apps/web/lib/i18n.ts` if `cnr-ME` is preferred. URL slugs stay English in both languages. |
 | 2026-11-08 | Abacus environment not yet provisioned; deployment target stays portable (Node 22 + MySQL 8). |

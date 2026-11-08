@@ -180,6 +180,7 @@ model Category {
   children        Category[]        @relation("CategoryTree")
   products        ProductCategory[]
   primaryProducts Product[]         @relation("PrimaryCategory")
+  translations    CategoryTranslation[]
 
   @@unique([parentId, slug])
   @@index([parentId, sortOrder])
@@ -193,6 +194,9 @@ model SizeScale {
   code      String   @unique @db.VarChar(40)
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+
+  /// Size guide: { columns: string[], rows: string[][], note?: string } — conversion table shown on product pages.
+  guide    Json?
 
   sizes    Size[]
   products Product[]
@@ -222,8 +226,9 @@ model Color {
   sortOrder Int      @default(0)
   createdAt DateTime @default(now())
 
-  variants ProductVariant[]
-  images   ProductImage[]
+  variants     ProductVariant[]
+  images       ProductImage[]
+  translations ColorTranslation[]
 
   @@map("colors")
 }
@@ -272,6 +277,7 @@ model Product {
   reviews         ProductReview[]
   wishlistItems   WishlistItem[]
   orderItems      OrderItem[]
+  translations    ProductTranslation[]
 
   @@index([status, publishedAt])
   @@index([brandId])
@@ -421,7 +427,8 @@ model Collection {
   createdAt      DateTime @default(now())
   updatedAt      DateTime @updatedAt
 
-  products CollectionProduct[]
+  products     CollectionProduct[]
+  translations CollectionTranslation[]
 
   @@index([featuredOnHome, sortOrder])
   @@map("collections")
@@ -903,6 +910,8 @@ model AnnouncementMessage {
   createdAt DateTime  @default(now())
   updatedAt DateTime  @updatedAt
 
+  translations AnnouncementTranslation[]
+
   @@index([isActive, sortOrder])
   @@map("announcement_messages")
 }
@@ -937,6 +946,8 @@ model HeroSlide {
   createdAt          DateTime   @default(now())
   updatedAt          DateTime   @updatedAt
 
+  translations HeroSlideTranslation[]
+
   @@index([isActive, sortOrder])
   @@map("hero_slides")
 }
@@ -961,6 +972,8 @@ model ContentBlock {
   sortOrder          Int              @default(0)
   createdAt          DateTime         @default(now())
   updatedAt          DateTime         @updatedAt
+
+  translations ContentBlockTranslation[]
 
   @@index([placement, isActive, sortOrder])
   @@map("content_blocks")
@@ -1008,4 +1021,119 @@ model AdminAuditLog {
   @@index([actorUserId, createdAt])
   @@index([createdAt])
   @@map("admin_audit_log")
+}
+
+// ═══════════════════════════════ Translations ═══════════════════════════════
+// The base tables hold the default language (English). Each *_translations row
+// holds one additional locale (currently "me" = Montenegrin). A missing row or a
+// NULL field falls back to the base value, so partially translated content still
+// renders. Slugs, SKUs and prices are language-neutral.
+
+model ProductTranslation {
+  productId      Int
+  locale         String   @db.VarChar(10)
+  title          String   @db.VarChar(200)
+  subtitle       String?  @db.VarChar(200)
+  description    String?  @db.Text
+  composition    String?  @db.Text
+  care           String?  @db.Text
+  seoTitle       String?  @db.VarChar(160)
+  seoDescription String?  @db.VarChar(320)
+  updatedAt      DateTime @updatedAt
+
+  product Product @relation(fields: [productId], references: [id], onDelete: Cascade)
+
+  @@id([productId, locale])
+  @@index([locale])
+  @@fulltext([title, description])
+  @@map("product_translations")
+}
+
+model CategoryTranslation {
+  categoryId     Int
+  locale         String   @db.VarChar(10)
+  name           String   @db.VarChar(120)
+  description    String?  @db.Text
+  seoTitle       String?  @db.VarChar(160)
+  seoDescription String?  @db.VarChar(320)
+  updatedAt      DateTime @updatedAt
+
+  category Category @relation(fields: [categoryId], references: [id], onDelete: Cascade)
+
+  @@id([categoryId, locale])
+  @@map("category_translations")
+}
+
+model CollectionTranslation {
+  collectionId   Int
+  locale         String   @db.VarChar(10)
+  title          String   @db.VarChar(120)
+  eyebrow        String?  @db.VarChar(80)
+  description    String?  @db.Text
+  seoTitle       String?  @db.VarChar(160)
+  seoDescription String?  @db.VarChar(320)
+  updatedAt      DateTime @updatedAt
+
+  collection Collection @relation(fields: [collectionId], references: [id], onDelete: Cascade)
+
+  @@id([collectionId, locale])
+  @@map("collection_translations")
+}
+
+model ColorTranslation {
+  colorId   Int
+  locale    String   @db.VarChar(10)
+  name      String   @db.VarChar(60)
+  updatedAt DateTime @updatedAt
+
+  color Color @relation(fields: [colorId], references: [id], onDelete: Cascade)
+
+  @@id([colorId, locale])
+  @@map("color_translations")
+}
+
+model HeroSlideTranslation {
+  heroSlideId       Int
+  locale            String   @db.VarChar(10)
+  eyebrow           String?  @db.VarChar(80)
+  headline          String   @db.VarChar(120)
+  body              String?  @db.VarChar(400)
+  primaryCtaLabel   String?  @db.VarChar(40)
+  secondaryCtaLabel String?  @db.VarChar(40)
+  imageAlt          String?  @db.VarChar(255)
+  updatedAt         DateTime @updatedAt
+
+  heroSlide HeroSlide @relation(fields: [heroSlideId], references: [id], onDelete: Cascade)
+
+  @@id([heroSlideId, locale])
+  @@map("hero_slide_translations")
+}
+
+model AnnouncementTranslation {
+  announcementId Int
+  locale         String   @db.VarChar(10)
+  message        String   @db.VarChar(200)
+  linkLabel      String?  @db.VarChar(60)
+  updatedAt      DateTime @updatedAt
+
+  announcement AnnouncementMessage @relation(fields: [announcementId], references: [id], onDelete: Cascade)
+
+  @@id([announcementId, locale])
+  @@map("announcement_translations")
+}
+
+model ContentBlockTranslation {
+  contentBlockId Int
+  locale         String   @db.VarChar(10)
+  eyebrow        String?  @db.VarChar(80)
+  title          String   @db.VarChar(160)
+  body           String?  @db.Text
+  ctaLabel       String?  @db.VarChar(40)
+  imageAlt       String?  @db.VarChar(255)
+  updatedAt      DateTime @updatedAt
+
+  contentBlock ContentBlock @relation(fields: [contentBlockId], references: [id], onDelete: Cascade)
+
+  @@id([contentBlockId, locale])
+  @@map("content_block_translations")
 }

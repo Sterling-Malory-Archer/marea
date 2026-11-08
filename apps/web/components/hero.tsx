@@ -3,6 +3,7 @@
 import Image from "next/image";
 import Link from "next/link";
 import { useEffect, useState } from "react";
+import { useI18n } from "@/lib/i18n-client";
 import type { HeroSlide } from "@/lib/types";
 import { Placeholder } from "./placeholder";
 
@@ -11,6 +12,7 @@ const AUTOPLAY_MS = 7000;
 export function Hero({ slides }: { slides: HeroSlide[] }) {
   const [active, setActive] = useState(0);
   const [paused, setPaused] = useState(false);
+  const { t, href } = useI18n();
 
   useEffect(() => {
     if (slides.length < 2 || paused) return;
@@ -26,7 +28,7 @@ export function Hero({ slides }: { slides: HeroSlide[] }) {
   return (
     <section
       aria-roledescription="carousel"
-      aria-label="Featured campaigns"
+      aria-label={t.home.featured}
       className="relative"
       onMouseEnter={() => setPaused(true)}
       onMouseLeave={() => setPaused(false)}
@@ -36,7 +38,7 @@ export function Hero({ slides }: { slides: HeroSlide[] }) {
       <div
         key={s.id}
         aria-roledescription="slide"
-        aria-label={`${active + 1} of ${slides.length}`}
+        aria-label={t.home.slideOf(active + 1, slides.length)}
         className="grid animate-[fade_0.7s_ease] lg:min-h-[min(calc(100svh-6.75rem),52rem)] lg:grid-cols-12"
       >
         {/* Colour field + photograph. On large screens the photo crosses the seam into the text panel. */}
@@ -58,7 +60,8 @@ export function Hero({ slides }: { slides: HeroSlide[] }) {
                 alt={s.imageAlt ?? s.headline}
                 className="h-full w-full"
                 tint={`color-mix(in srgb, ${s.panelColor} 80%, #202020)`}
-                label="Placeholder — campaign photograph (4:5, min. 2400 px tall)"
+                label={t.placeholder.campaign}
+                suffix={t.placeholder.suffix}
               />
             )}
           </div>
@@ -75,11 +78,11 @@ export function Hero({ slides }: { slides: HeroSlide[] }) {
             <h1 className="display text-[clamp(3.1rem,7.2vw,7.25rem)] text-balance">{s.headline}</h1>
             {s.body && <p className="mt-6 max-w-[28rem] text-lead text-ink/75 lg:mt-9">{s.body}</p>}
             <div className="mt-8 flex flex-wrap items-center gap-x-7 gap-y-4 lg:mt-11">
-              <Link href={s.primaryCtaUrl} className="btn btn-outline uppercase tracking-[0.14em]">
+              <Link href={href(s.primaryCtaUrl)} className="btn btn-outline uppercase tracking-[0.14em]">
                 {s.primaryCtaLabel}
               </Link>
               {s.secondaryCtaLabel && s.secondaryCtaUrl && (
-                <Link href={s.secondaryCtaUrl} className="link-underline text-small">
+                <Link href={href(s.secondaryCtaUrl)} className="link-underline text-small">
                   {s.secondaryCtaLabel}
                 </Link>
               )}
@@ -94,14 +97,14 @@ export function Hero({ slides }: { slides: HeroSlide[] }) {
             textLeft ? "lg:right-7" : "lg:left-7"
           }`}
           role="group"
-          aria-label="Choose slide"
+          aria-label={t.home.chooseSlide}
         >
           {slides.map((slide, i) => (
             <button
               key={slide.id}
               type="button"
               onClick={() => setActive(i)}
-              aria-label={`Show slide ${i + 1} of ${slides.length}: ${slide.headline}`}
+              aria-label={t.home.showSlide(i + 1, slides.length, slide.headline)}
               aria-current={i === active}
               className="group flex items-center gap-2 py-1 text-micro text-ink lg:flex-col"
             >

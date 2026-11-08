@@ -2,11 +2,13 @@
 
 import Link from "next/link";
 import { useEffect, useState } from "react";
+import { useI18n } from "@/lib/i18n-client";
 import type { Announcement } from "@/lib/types";
 
 export function AnnouncementBar({ items }: { items: Announcement[] }) {
   const [index, setIndex] = useState(0);
   const [paused, setPaused] = useState(false);
+  const { href, t } = useI18n();
 
   useEffect(() => {
     if (items.length < 2 || paused) return;
@@ -30,8 +32,8 @@ export function AnnouncementBar({ items }: { items: Announcement[] }) {
         <p key={item.id} className="animate-[fade_0.6s_ease] truncate">
           {item.message}
           {item.linkUrl && (
-            <Link href={item.linkUrl} className="link-underline ml-3 text-paper/80 hover:text-paper">
-              {item.linkLabel ?? "Learn more"}
+            <Link href={item.linkUrl.startsWith("/") ? href(item.linkUrl) : item.linkUrl} className="link-underline ml-3 text-paper/80 hover:text-paper">
+              {item.linkLabel ?? t.home.readMore}
             </Link>
           )}
         </p>

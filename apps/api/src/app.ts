@@ -13,6 +13,7 @@ import { adminAuthRouter } from "./modules/auth/admin-auth.routes.js";
 import { productsAdminRouter } from "./modules/catalog/admin/products.routes.js";
 import { taxonomyAdminRouter } from "./modules/catalog/admin/taxonomy.routes.js";
 import { storefrontRouter } from "./modules/storefront/storefront.routes.js";
+import { translationsAdminRouter } from "./modules/i18n/translations-admin.routes.js";
 
 export function createApp(ctx: AppContext) {
   const app = express();
@@ -81,6 +82,7 @@ export function createApp(ctx: AppContext) {
   admin.use(requireAdmin(ctx));
   admin.use(taxonomyAdminRouter(ctx));
   admin.use(productsAdminRouter(ctx));
+  admin.use(translationsAdminRouter(ctx));
   api.use("/admin", admin);
 
   app.use("/api", api);

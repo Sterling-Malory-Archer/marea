@@ -1,21 +1,24 @@
 import type { Prisma } from "@marea/db";
 import type { Storage } from "../storage/storage.js";
 import { discountPercent } from "../../lib/util.js";
+import { localize, tr, type Locale } from "../../lib/i18n.js";
 
 /** Everything a storefront product card needs, in one query shape. */
-export const productCardInclude = {
-  brand: { select: { name: true, slug: true } },
-  images: { orderBy: [{ sortOrder: "asc" }, { id: "asc" }], take: 2 },
-  variants: {
-    where: { isActive: true },
-    select: {
-      color: { select: { id: true, name: true, slug: true, hex: true, sortOrder: true } },
-      inventory: { select: { quantityOnHand: true, quantityReserved: true, allowBackorder: true } },
+export const productCardInclude = (locale: Locale) =>
+  ({
+    brand: { select: { name: true, slug: true } },
+    translations: tr(locale),
+    images: { orderBy: [{ sortOrder: "asc" }, { id: "asc" }], take: 2 },
+    variants: {
+      where: { isActive: true },
+      select: {
+        color: { select: { id: true, name: true, slug: true, hex: true, sortOrder: true, translations: tr(locale) } },
+        inventory: { select: { quantityOnHand: true, quantityReserved: true, allowBackorder: true } },
+      },
     },
-  },
-} satisfies Prisma.ProductInclude;
+  }) satisfies Prisma.ProductInclude;
 
-type CardRow = Prisma.ProductGetPayload<{ include: typeof productCardInclude }>;
+type CardRow = Prisma.ProductGetPayload<{ include: ReturnType<typeof productCardInclude> }>;
 
 export interface ProductCard {
   id: number;
@@ -34,29 +37,32 @@ export interface ProductCard {
 }
 
 export function toProductCard(row: CardRow, storage: Storage): ProductCard {
+  const p = localize(row, ["title"] as const);
   const colors = new Map<number, { name: string; slug: string; hex: string; sortOrder: number }>();
   let inStock = false;
   for (const v of row.variants) {
-    colors.set(v.color.id, v.color);
+    const c = localize(v.color, ["name"] as const);
+    colors.set(c.id, c);
     const inv = v.inventory;
     if (inv && (inv.allowBackorder || inv.quantityOnHand - inv.quantityReserved > 0)) inStock = true;
   }
   return {
-    id: row.id,
-    slug: row.slug,
-    title: row.title,
+    id: p.id,
+    slug: p.slug,
+    title: p.title,
     brand: row.brand,
-    currency: row.currency,
-    priceMinor: row.priceMinor,
-    compareAtPriceMinor: row.compareAtPriceMinor,
-    discountPercent: discountPercent(row.priceMinor, row.compareAtPriceMinor),
-    isOnSale: row.isOnSale,
-    isNewArrival: row.isNewArrival,
+    currency: p.currency,
+    priceMinor: p.priceMinor,
+    compareAtPriceMinor: p.compareAtPriceMinor,
+    discountPercent: discountPercent(p.priceMinor, p.compareAtPriceMinor),
+    isOnSale: p.isOnSale,
+    isNewArrival: p.isNewArrival,
     inStock,
-    colors: [...colors.values()].sort((a, b) => a.sortOrder - b.sortOrder).map(({ sortOrder: _s, ...c }) => c),
+    colors: [...colors.values()].sort((a, b) => a.sortOrder - b.sortOrder).map(({ name, slug, hex }) => ({ name, slug, hex })),
     images: row.images.map((img) => ({
       url: img.isPlaceholder ? null : storage.publicUrl(img.storageKey),
-      alt: img.altText ?? row.title,
+      // Alt text follows the localized title so screen readers hear the page language.
+      alt: p.title,
       width: img.width,
       height: img.height,
       isPlaceholder: img.isPlaceholder,

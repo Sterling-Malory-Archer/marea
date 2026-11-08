@@ -8,20 +8,22 @@ import type { CSSProperties } from "react";
 export function Placeholder({
   alt,
   tint,
-  label = "Placeholder image",
+  label,
+  suffix = "placeholder — photograph to come",
   className = "",
   showLabel = true,
 }: {
   alt: string;
   tint?: string;
-  label?: string;
+  label: string;
+  suffix?: string;
   className?: string;
   showLabel?: boolean;
 }) {
   return (
     <div
       role="img"
-      aria-label={`${alt} (placeholder — photograph to come)`}
+      aria-label={`${alt} (${suffix})`}
       className={`placeholder-photo ${className}`}
       style={tint ? ({ "--ph-tint": tint } as CSSProperties) : undefined}
     >

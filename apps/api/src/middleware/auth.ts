@@ -25,3 +25,9 @@ export function requirePermission(permission: Permission): RequestHandler {
     next();
   };
 }
+
+/** Imperative permission check for handlers whose required permission depends on input. */
+export function assertCan(req: Express.Request, permission: Permission) {
+  if (!req.admin) throw unauthorized();
+  if (!can(req.admin.user.role, permission)) throw forbidden();
+}

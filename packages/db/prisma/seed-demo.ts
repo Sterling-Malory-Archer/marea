@@ -46,6 +46,39 @@ const P: Demo[] = [
   { ref: "BLT-16", title: "Leather Belt with Brass Buckle", brand: "marea-studio", cat: "accessories/belts", scale: "one-size", colors: ["black", "tan"], price: 5900, description: "A 30 mm belt in full-grain leather with a solid brass buckle.", composition: "Leather, brass" },
 ];
 
+
+// Montenegrin copy for the demo products (translation tables are exercised end to end).
+const ME_COPY: Record<string, [string, string, string]> = {
+  "COAT-01": ["Kaput od dvostrane vune", "Kaput bez postave od dvostrane vune, dug i opušten u ramenima, sa ručno obrađenim ivicama i jednim skrivenim dugmetom.", "90% vuna, 10% kašmir"],
+  "KNIT-02": ["Rebrasti džemper od merino vune", "Pripijeni džemper okruglog izreza od fine, izuzetno meke merino vune sa dubokim rebrastim rubom.", "100% merino vuna"],
+  "DRS-03": ["Satenska midi haljina krojena po kosini", "Krojena po kosini da prati pokret, sa mekim drapiranim izrezom i podesivim bretelama.", "100% viskozni saten"],
+  "TRS-04": ["Široke pantalone sa faltama", "Pantalone visokog struka sa dvostrukim faltama naprijed i lepršavom širokom nogavicom.", "68% vuna, 30% poliester, 2% elastan"],
+  "SHT-05": ["Oversized košulja od poplina", "Široka košulja od organskog pamučnog poplina sa spuštenim ramenima.", "100% organski pamuk"],
+  "JNS-06": ["Ravne farmerke visokog struka", "Kruti džins visokog struka sa ravnom nogavicom pune dužine.", "100% pamučni džins, 13 oz"],
+  "SKT-07": ["Vunena midi suknja na preklop", "Suknja na preklop od češljanog vunenog flanela, sa vezivanjem u struku.", "80% vuna, 20% poliamid"],
+  "MCT-08": ["Jednoredni kaput", "Klasičan kaput od italijanske vune i kašmira, sa polupostavom i reverom sa zarezom.", "85% vuna, 15% kašmir"],
+  "MKN-09": ["Debeli vuneni kardigan", "Težak kardigan sa šal kragnom, pleten teksturiranim bodom.", "70% vuna, 30% alpaka"],
+  "MTS-10": ["Majica od teškog pamuka", "Kockasta majica od gustog pamučnog džersija od 240 g/m².", "100% pamuk"],
+  "BOT-11": ["Kožne Chelsea čizme", "Chelsea čizme od polirane teleće kože na slaganoj kožnoj potpetici sa gumenim umetkom.", "Lice: teleća koža. Đon: koža i guma"],
+  "SNK-12": ["Minimalističke kožne patike", "Niske patike od glatke kože sa prošivenim đonom.", "Lice: koža. Đon: guma"],
+  "HEL-13": ["Slingback cipele na niskoj štikli", "Šiljate slingback cipele na štikli od 45 mm.", "Lice: brušena koža. Đon: koža"],
+  "BAG-14": ["Strukturirana kožna tote torba", "Prostrana, strukturirana tote torba od biljno štavljene kože sa unutrašnjim džepom na rajsferšlus.", "100% goveđa koža"],
+  "BAG-15": ["Mekana crossbody torba", "Opuštena crossbody torba sa podesivim kaišem i magnetnim zatvaranjem.", "100% jagnjeća koža"],
+  "BLT-16": ["Kožni kaiš sa mesinganom kopčom", "Kaiš širine 30 mm od pune kože sa kopčom od punog mesinga.", "Koža, mesing"],
+};
+
+async function translateDemo() {
+  for (const [ref, [title, description, composition]] of Object.entries(ME_COPY)) {
+    const p = await db.product.findUnique({ where: { reference: `DEMO-${ref}` } });
+    if (!p) continue;
+    await db.productTranslation.upsert({
+      where: { productId_locale: { productId: p.id, locale: "me" } },
+      update: {},
+      create: { productId: p.id, locale: "me", title, description, composition, care: "Profesionalno hemijsko čišćenje ili nježno ručno pranje. Ne sušiti u mašini." },
+    });
+  }
+}
+
 async function purge() {
   const products = await db.product.findMany({ where: { reference: { startsWith: "DEMO-" } }, select: { id: true } });
   await db.product.deleteMany({ where: { id: { in: products.map((p) => p.id) } } });
@@ -119,6 +152,7 @@ async function main() {
     }
     n++;
   }
+  await translateDemo();
   console.log(`Created ${n} demo products (placeholders only).`);
 }
 

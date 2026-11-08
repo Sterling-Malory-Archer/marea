@@ -15,19 +15,22 @@ infra/          Dockerfiles, MySQL init script
 docs/           Architecture, deployment (incl. Abacus checklist), phase log
 ```
 
-## Quick start (local)
+## Run it on your computer
+
+You need **Node.js 22+**, **pnpm** (`corepack enable`) and **Docker Desktop** (running).
 
 ```bash
-cp .env.example .env              # then fill in secrets — see comments inside
-docker compose up -d mysql        # or use any MySQL 8.x server
-pnpm install
-pnpm db:deploy                    # apply migrations
-pnpm db:seed                      # base configuration + first OWNER account
-pnpm db:seed:demo                 # OPTIONAL: placeholder demo products (dev only)
-pnpm dev                          # API on :4000, storefront on :3000
+git clone https://github.com/Sterling-Malory-Archer/marea.git
+cd marea
+pnpm setup:local     # creates .env, starts MySQL 8 in Docker, migrates, seeds demo products
+pnpm dev             # storefront on http://localhost:3000 (Montenegrin: /me), API on :4000
 ```
 
-Remove demo data at any time with `pnpm --filter @marea/db seed:demo --purge`.
+`setup:local` prints the admin login it created. Remove demo data at any time with
+`pnpm --filter @marea/db seed:demo --purge`.
+
+Manual alternative: copy `.env.example` to `.env`, point `DATABASE_URL` at any MySQL 8 server, then run
+`pnpm install && pnpm --filter @marea/db build && pnpm db:deploy && pnpm db:seed && pnpm dev`.
 
 ## Quality gates
 
@@ -42,4 +45,4 @@ committed migrations ever drift from `schema.prisma`.
 
 ## Status
 
-See [docs/PHASES.md](docs/PHASES.md). Phases 1–3 are complete; checkout, payments and the admin UI come next.
+See [docs/PHASES.md](docs/PHASES.md). Phases 1–4 are complete; accounts, cart and checkout come next.

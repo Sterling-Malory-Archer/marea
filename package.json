@@ -6,6 +6,7 @@
     "node": ">=22"
   },
   "scripts": {
+    "setup:local": "node scripts/setup-local.mjs",
     "dev": "pnpm -r --parallel --filter ./apps/* dev",
     "build": "pnpm --filter @marea/db build && pnpm --filter @marea/api build && pnpm --filter @marea/web build",
     "typecheck": "pnpm -r typecheck",
