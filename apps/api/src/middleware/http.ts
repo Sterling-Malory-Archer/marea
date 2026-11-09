@@ -95,3 +95,5 @@ export function errorHandler(log: Logger): (err: unknown, req: Request, res: Res
     res.status(500).json({ error: { code: "INTERNAL", message: "Something went wrong", requestId: req.requestId } });
   };
 }
+
+export { patchSchema } from "../lib/schema.js";

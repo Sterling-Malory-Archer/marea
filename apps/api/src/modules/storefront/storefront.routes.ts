@@ -62,7 +62,7 @@ export function storefrontRouter(ctx: AppContext) {
       }),
     ]);
     const cats = categories.map((c) => localize(c, ["name"] as const));
-    const tagline = locale === "en" ? settings["store.tagline"] : ((await ctx.db.storeSetting.findUnique({ where: { key: `store.tagline.${locale}` } }))?.value as string | undefined) ?? settings["store.tagline"];
+    const tagline = locale === "me" && settings["store.tagline.me"] ? settings["store.tagline.me"] : settings["store.tagline"];
     res.set("Cache-Control", PUBLIC_CACHE);
     res.json({
       locale,

@@ -1,6 +1,6 @@
 import { Router } from "express";
 import { z } from "zod";
-import type { Tx } from "@marea/db";
+import { Prisma, type Tx } from "@marea/db";
 import type { AppContext } from "../../../context.js";
 import { badRequest, conflict, notFound } from "../../../lib/errors.js";
 import { slugify } from "../../../lib/util.js";
@@ -193,6 +193,35 @@ export function taxonomyAdminRouter(ctx: AppContext) {
         res.status(201).json(size);
       }),
   );
+
+  r.patch(
+    "/size-scales/:id",
+    write,
+    validated(
+      {
+        params: idParam,
+        body: z.object({
+          name: z.string().trim().min(1).max(80).optional(),
+          guide: z.object({ columns: z.array(z.string().max(30)).min(1).max(10), rows: z.array(z.array(z.string().max(30)).max(10)).max(60), note: z.string().max(40).optional() }).nullable().optional(),
+        }),
+      },
+      async (req, res, { params, body }) => {
+        const before = await ctx.db.sizeScale.findUnique({ where: { id: params.id } });
+        if (!before) throw notFound("Size system");
+        const scale = await ctx.db.sizeScale.update({ where: { id: params.id }, data: { name: body.name, guide: body.guide === null ? Prisma.DbNull : (body.guide as never) }, include: { sizes: { orderBy: { sortOrder: "asc" } } } });
+        await audit(ctx.db, req, { action: "sizeScale.update", entityType: "sizeScale", entityId: scale.id, before, after: scale });
+        res.json(scale);
+      },
+    ),
+  );
+
+  r.delete("/colors/:id", write, validated({ params: idParam }, async (req, res, { params }) => {
+    const used = await ctx.db.productVariant.count({ where: { colorId: params.id } });
+    if (used > 0) throw conflict(`Colour is used by ${used} variant(s)`);
+    const before = await ctx.db.color.delete({ where: { id: params.id } });
+    await audit(ctx.db, req, { action: "color.delete", entityType: "color", entityId: params.id, before });
+    res.status(204).end();
+  }));
 
   r.delete("/sizes/:id", write, validated({ params: idParam }, async (req, res, { params }) => {
     const used = await ctx.db.productVariant.count({ where: { sizeId: params.id } });

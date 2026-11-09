@@ -19,6 +19,10 @@ import { accountRouter } from "./modules/customers/account.routes.js";
 import { cartRouter } from "./modules/cart/cart.routes.js";
 import { checkoutRouter } from "./modules/checkout/checkout.routes.js";
 import { ordersAdminRouter } from "./modules/orders/orders-admin.routes.js";
+import { dashboardRouter } from "./modules/admin/dashboard.routes.js";
+import { peopleRouter } from "./modules/admin/people.routes.js";
+import { commerceRouter } from "./modules/admin/commerce.routes.js";
+import { contentRouter } from "./modules/admin/content.routes.js";
 
 export function createApp(ctx: AppContext) {
   const app = express();
@@ -94,6 +98,10 @@ export function createApp(ctx: AppContext) {
   admin.use(productsAdminRouter(ctx));
   admin.use(translationsAdminRouter(ctx));
   admin.use(ordersAdminRouter(ctx));
+  admin.use(dashboardRouter(ctx));
+  admin.use(peopleRouter(ctx));
+  admin.use(commerceRouter(ctx));
+  admin.use(contentRouter(ctx));
   api.use("/admin", admin);
 
   app.use("/api", api);

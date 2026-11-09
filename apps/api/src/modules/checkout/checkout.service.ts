@@ -227,6 +227,14 @@ export async function placeOrder(ctx: AppContext, req: Request, res: Response, i
 
   // COD orders are confirmed now; card orders are confirmed when payment succeeds (Phase 7).
   if (isCod) await sendOrderEmail(ctx, "confirmation", order.id, { accessToken });
+  if (settings["notifications.orderEmail"]) {
+    const to = settings["notifications.orderEmail"];
+    const admin = `${ctx.env.PUBLIC_WEB_URL.replace(/\/$/, "")}/admin/orders/${order.orderNumber}`;
+    const total = new Intl.NumberFormat("en-IE", { style: "currency", currency: order.currency }).format(order.totalMinor / 100);
+    await ctx.mailer
+      .send({ to, subject: `New order ${order.orderNumber} — ${total}`, text: `New ${isCod ? "cash-on-delivery" : "online"} order ${order.orderNumber} from ${order.customerFirstName} ${order.customerLastName} (${order.email}), ${total}.\n${admin}`, html: `<p>New ${isCod ? "cash-on-delivery" : "online"} order <a href="${admin}">${order.orderNumber}</a> from ${order.customerFirstName} ${order.customerLastName}, ${total}.</p>` })
+      .catch((err) => ctx.log.error({ err }, "Staff order notification failed"));
+  }
   return { order, accessToken, replay: false };
 }
 
