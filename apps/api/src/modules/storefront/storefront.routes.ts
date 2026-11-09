@@ -1,3 +1,4 @@
+import { zoneForCountry } from "../cart/cart.service.js";
 import { Router } from "express";
 import { rateLimit } from "express-rate-limit";
 import { z } from "zod";
@@ -52,8 +53,9 @@ export function storefrontRouter(ctx: AppContext) {
   /** Global chrome: settings, announcement bar, navigation. */
   r.get("/layout", validated({ query: localeOnly }, async (_req, res, { query: { locale } }) => {
     const now = new Date();
-    const [settings, announcements, categories] = await Promise.all([
+    const [settings, homeZone, announcements, categories] = await Promise.all([
       getSettings(ctx.db),
+      zoneForCountry(ctx.db, "ME"),
       ctx.db.announcementMessage.findMany({ where: activeWindow(now), orderBy: { sortOrder: "asc" }, include: { translations: tr(locale) } }),
       ctx.db.category.findMany({
         where: { isActive: true, showInNav: true, depth: { lte: 1 } },
@@ -71,7 +73,8 @@ export function storefrontRouter(ctx: AppContext) {
         tagline,
         currency: settings["store.currency"],
         locale: settings["store.locale"],
-        freeShippingOverMinor: settings["shipping.freeOverMinor"],
+        // Single source of truth: the cheapest home-market method's free-delivery threshold.
+        freeShippingOverMinor: homeZone?.methods.map((m) => m.freeOverMinor).filter((v): v is number => v != null).sort((x, y) => x - y)[0] ?? null,
         codEnabled: settings["checkout.codEnabled"],
         returnsDays: settings["returns.days"],
         supportEmail: settings["store.supportEmail"],

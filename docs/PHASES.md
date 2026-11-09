@@ -8,8 +8,8 @@
 | 4 | Bilingual routing (EN / Montenegrin), catalogue pages, filters, search, product detail, variants UI | ✅ Done |
 | 5 | Customer accounts, auth, cart, wishlist (DB-backed) | ✅ Done |
 | 6 | Checkout, orders, inventory reservations | ✅ Done |
-| 7 | Payment provider + webhooks | Next — needs merchant account (see below) |
-| 8 | Admin dashboard UI, e-mails, shipping | |
+| 7 | Payment provider + webhooks | ⏸ Deferred — waiting for the merchant decision (see below) |
+| 8 | Admin dashboard UI, e-mails, shipping | ✅ Done |
 | 9 | SEO, performance, security hardening, responsive QA | |
 | 10 | End-to-end tests, staging, launch | |
 
@@ -84,10 +84,25 @@
 - [x] Bilingual order e-mails: confirmation, shipped (tracking link), delivered, cancelled.
 - [x] 80 integration tests (13 new) passing in random order; three end-to-end browser checkouts (EN guest desktop, ME guest mobile, signed-in customer).
 
+## Phase 8 — acceptance
+
+- [x] Admin at `/admin` (English only, `noindex`), separate sign-in with lockout, 12-hour sessions, `SameSite=Strict` cookie; every screen and button follows the signed-in role (the API enforces the same permissions again).
+- [x] Dashboard: sales, orders, average order, orders to fulfil, revenue chart by day (Europe/Podgorica), recent orders, bestsellers, low stock.
+- [x] Orders: search and filter, detail with status actions (only valid next steps), customer e-mail toggle, shipping with carrier + tracking, internal notes, timeline, stock movements; printable A4 order confirmation and packing slip (marked "not a fiscal invoice").
+- [x] Products: list with search, status and low-stock filters; create draft → colour × size matrix with auto SKUs and starting stock → per-variant price override, stock updates with a reason (count, delivery, return, damage), alert level, on/off, movement history → photos (upload, drag-drop, cover order, colourway, alt text; metadata stripped) → publish checks → Montenegrin copy; unpublish, archive, delete (blocked when the product is in orders).
+- [x] Catalogue: category tree (move, hide, menu, URLs rebuilt), brands, colours (with swatch + Montenegrin name), size systems with editable size guides.
+- [x] Customers (search, detail, orders, lifetime value, disable/enable, anonymise on deletion request), newsletter (filter, unsubscribe, CSV export safe against spreadsheet formulas), discount codes, delivery zones and methods, settings by section (company details for documents, order-alert inbox, COD stock rule), staff (invite by e-mail link — nobody else sees the password — roles, remove access, last-owner protection), activity log with before/after.
+- [x] Homepage & content: hero slides (layout, campaign image upload, background colour, schedule), announcement bar, homepage blocks, collections with ordered product lists — all with Montenegrin tabs.
+- [x] Staff e-mail alert for every new order (`notifications.orderEmail`).
+- [x] Fixes found while building: saving one setting no longer resets the others (Zod `.partial()` defaults); a product's main category always stays linked; the footer's free-delivery line now comes from the Montenegro delivery methods (the duplicate setting was removed); development media are served from `/media` so Next.js image optimisation works.
+- [x] 93 API tests passing in random order; end-to-end browser run creating, stocking, photographing, publishing and translating a product through the UI, then checking it on `/me/p/…`.
+
 ## Owner actions before launch
 
 - **SMTP provider** for transactional e-mail (e.g. Postmark, Mailgun, Amazon SES, or your host's SMTP), plus SPF/DKIM DNS records for the sending domain. Set `MAIL_DRIVER=smtp` and the `SMTP_*` variables.
 - Delete the `DEMO10` code (or run `pnpm --filter @marea/db seed:demo --purge`).
+- Fill in **Settings → Company details** (legal name, PIB, registration number, address) and the **order-alert inbox**.
+- **Fiscalisation:** Montenegro requires fiscal receipts. The admin's order documents are not fiscal invoices; the fiscal receipt must come from your certified fiscalisation software/service (to be connected or run alongside — decide with your accountant).
 
 ## Phase 7 prerequisites (owner action)
 
@@ -105,3 +120,5 @@ currencies (EUR), refund API access. Until then the footer lists only cash on de
 | 2026-11-08 | **English is the default language** (`/` serves English); visitors switch to Montenegrin with a language selector in the header and footer. The choice is remembered in a cookie; the site never auto-redirects based on browser language, so shared links always open in the language they were shared in. |
 | 2026-11-08 | Language tags: `<html lang="sr-Latn-ME">` for Montenegrin pages (screen readers have no `cnr` voice yet) and `hreflang="sr-ME"` (understood by search engines). Change in `apps/web/lib/i18n.ts` if `cnr-ME` is preferred. URL slugs stay English in both languages. |
 | 2026-11-08 | Abacus environment not yet provisioned; deployment target stays portable (Node 22 + MySQL 8). |
+| 2026-11-09 | Phase 7 (card payments) **deferred** until the payment merchant is chosen; checkout offers cash on delivery meanwhile. |
+| 2026-11-09 | The admin is **English-only**; every customer-facing text it edits has an English and a Montenegrin version. |

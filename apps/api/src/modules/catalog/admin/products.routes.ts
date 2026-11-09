@@ -226,7 +226,7 @@ export function productsAdminRouter(ctx: AppContext) {
           isOnSale: data.compareAtPriceMinor != null && data.compareAtPriceMinor > data.priceMinor,
         },
       });
-      const links = categoryIds ?? (data.primaryCategoryId ? [data.primaryCategoryId] : []);
+      const links = [...(categoryIds ?? []), ...(data.primaryCategoryId ? [data.primaryCategoryId] : [])];
       await syncLinks(tx, created.id, links, collectionIds);
       return created;
     });
@@ -252,6 +252,9 @@ export function productsAdminRouter(ctx: AppContext) {
         data: { ...data, isOnSale: compareAt != null && compareAt > price },
       });
       await syncLinks(tx, params.id, categoryIds, collectionIds);
+      // The main category is always one of the product's categories (listings filter on the links).
+      if (after.primaryCategoryId)
+        await tx.productCategory.createMany({ data: [{ productId: params.id, categoryId: after.primaryCategoryId }], skipDuplicates: true });
       return { before, after };
     });
     await audit(ctx.db, req, { action: "product.update", entityType: "product", entityId: params.id, before, after });

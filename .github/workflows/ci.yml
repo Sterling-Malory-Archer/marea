@@ -25,7 +25,7 @@ jobs:
       TEST_DATABASE_URL: mysql://marea:marea@127.0.0.1:3306/marea_test
       SHADOW_DATABASE_URL: mysql://root:root@127.0.0.1:3306/marea_shadow
       PUBLIC_WEB_URL: http://localhost:3000
-      MEDIA_PUBLIC_BASE_URL: http://localhost:4000/media
+      MEDIA_PUBLIC_BASE_URL: /media
       COOKIE_SECRET: ci-only-cookie-secret-not-used-anywhere-else-0123456789
     steps:
       - uses: actions/checkout@v5

@@ -73,6 +73,10 @@ describe("products", () => {
     expect(p.slug).toMatch(/^wool-coat/);
     expect(p.categories).toHaveLength(1);
 
+    // The admin form may send an empty "also show in" list: the main category must stay linked.
+    const kept = await agent.patch(`/api/admin/products/${p.id}`).send({ categoryIds: [] }).expect(200);
+    expect(kept.body.categories.map((c: { categoryId: number }) => c.categoryId)).toEqual([ref.coats.id]);
+
     const bad = await agent.patch(`/api/admin/products/${p.id}`).send({ compareAtPriceMinor: 20000 });
     expect(bad.status).toBe(422);
 

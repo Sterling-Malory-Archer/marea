@@ -18,7 +18,8 @@ const schema = z
     LOG_LEVEL: z.enum(["fatal", "error", "warn", "info", "debug", "trace", "silent"]).default("info"),
     STORAGE_DRIVER: z.enum(["local", "s3"]).default("local"),
     LOCAL_STORAGE_DIR: z.string().default("./storage"),
-    MEDIA_PUBLIC_BASE_URL: z.url(),
+    /// CDN/bucket URL in production; "/media" in development (served same-origin through the web app).
+    MEDIA_PUBLIC_BASE_URL: z.union([z.url(), z.string().regex(/^\/[A-Za-z0-9/_-]*$/, "Use an absolute URL or a path like /media")]),
     S3_ENDPOINT: z.string().default(""),
     S3_REGION: z.string().default("eu-central-1"),
     S3_BUCKET: z.string().default(""),
@@ -47,6 +48,8 @@ const schema = z
         ctx.addIssue({ code: "custom", path: ["MAIL_DRIVER"], message: "Configure SMTP in production so verification and password-reset e-mails are delivered" });
       if (!env.COOKIE_SECURE)
         ctx.addIssue({ code: "custom", path: ["COOKIE_SECURE"], message: "COOKIE_SECURE must be true in production (HTTPS)" });
+      if (!env.MEDIA_PUBLIC_BASE_URL.startsWith("https://"))
+        ctx.addIssue({ code: "custom", path: ["MEDIA_PUBLIC_BASE_URL"], message: "Use the https:// CDN or bucket URL in production" });
     }
   });
 

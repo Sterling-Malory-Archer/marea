@@ -32,5 +32,5 @@ export function proxy(req: NextRequest) {
 
 export const config = {
   // Everything except API/media proxies, Next internals and files with an extension.
-  matcher: ["/((?!api/|media/|_next/|.*\\.[a-zA-Z0-9]+$).*)"],
+  matcher: ["/((?!api/|media/|_next/|admin(?:/|$)|.*\\.[a-zA-Z0-9]+$).*)"],
 };

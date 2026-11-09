@@ -21,7 +21,6 @@ async function settings() {
     "store.tagline": "Contemporary wardrobe, considered.",
     "store.currency": "EUR",
     "store.locale": "en-ME",
-    "shipping.freeOverMinor": 10000,
     "checkout.codEnabled": true,
     "tax.vatRateBps": 2100,
     "returns.days": 14,
@@ -30,6 +29,8 @@ async function settings() {
     // Never overwrite a value an administrator has already changed.
     await db.storeSetting.upsert({ where: { key }, update: {}, create: { key, value: value as never } });
   }
+  // Retired keys (free delivery now comes from the delivery methods themselves).
+  await db.storeSetting.deleteMany({ where: { key: { in: ["shipping.freeOverMinor"] } } });
 }
 
 async function sizeScales() {

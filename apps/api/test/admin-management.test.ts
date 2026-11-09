@@ -75,12 +75,12 @@ describe("shipping & settings", () => {
   it("updates typed settings and rejects unknown keys or wrong types", async () => {
     expect((await admin.patch("/api/admin/settings").send({ nonsense: 1 })).status).toBe(422);
     expect((await admin.patch("/api/admin/settings").send({ "returns.days": "fourteen" })).status).toBe(422);
-    await admin.patch("/api/admin/settings").send({ "shipping.freeOverMinor": 12345 }).expect(200);
+    await admin.patch("/api/admin/settings").send({ "inventory.reservationMinutes": 45 }).expect(200);
     const res = await admin.patch("/api/admin/settings").send({ "company.name": "MAREA d.o.o.", "returns.days": 14 });
     expect(res.body.values["company.name"]).toBe("MAREA d.o.o.");
     // Regression: saving one setting must not reset the others to defaults.
-    expect(res.body.values["shipping.freeOverMinor"]).toBe(12345);
-    await admin.patch("/api/admin/settings").send({ "shipping.freeOverMinor": 10000 }).expect(200);
+    expect(res.body.values["inventory.reservationMinutes"]).toBe(45);
+    await admin.patch("/api/admin/settings").send({ "inventory.reservationMinutes": 30 }).expect(200);
     const { agent } = await loginAs("ORDER_MANAGER");
     expect((await agent.patch("/api/admin/settings").send({ "returns.days": 30 })).status).toBe(403);
   });

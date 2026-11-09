@@ -12,7 +12,6 @@ export const settingsSchema = z.object({
   "store.supportEmail": z.string().default(""),
   "store.supportPhone": z.string().default(""),
   "store.instagramUrl": z.string().default(""),
-  "shipping.freeOverMinor": z.number().int().nullable().default(10000),
   "checkout.codEnabled": z.boolean().default(true),
   "tax.vatRateBps": z.number().int().min(0).max(10000).default(2100),
   "returns.days": z.number().int().min(0).default(14),

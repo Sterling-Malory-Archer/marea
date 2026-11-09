@@ -24,7 +24,7 @@ export function dashboardRouter(ctx: AppContext) {
       ctx.db.order.aggregate({ where: { placedAt: { gte: prevSince, lt: since }, status: { in: SALE_STATUSES } }, _sum: { totalMinor: true }, _count: true }),
       ctx.db.order.findMany({ orderBy: { placedAt: "desc" }, take: 8, select: { orderNumber: true, placedAt: true, customerFirstName: true, customerLastName: true, status: true, totalMinor: true, currency: true } }),
       ctx.db.orderItem.groupBy({
-        by: ["productId", "productTitle"],
+        by: ["productId"],
         where: { productId: { not: null }, order: { placedAt: { gte: since }, status: { in: SALE_STATUSES } } },
         _sum: { quantity: true, lineTotalMinor: true },
         orderBy: { _sum: { quantity: "desc" } },
@@ -45,6 +45,9 @@ export function dashboardRouter(ctx: AppContext) {
       ctx.db.user.count({ where: { role: "CUSTOMER", createdAt: { gte: since } } }),
       ctx.db.order.count({ where: { status: { in: ["PROCESSING", "PAID"] } } }),
     ]);
+
+    // Current (English) catalogue titles — order snapshots may be in the buyer's language.
+    const titles = new Map((await ctx.db.product.findMany({ where: { id: { in: best.map((b) => b.productId!).filter(Boolean) } }, select: { id: true, title: true } })).map((p) => [p.id, p.title]));
 
     // Bucket by the store's local calendar day, filling empty days with zero.
     const buckets = new Map<string, { date: string; salesMinor: number; orders: number }>();
@@ -72,7 +75,7 @@ export function dashboardRouter(ctx: AppContext) {
       },
       revenueByDay: [...buckets.values()],
       recentOrders: recent,
-      bestsellers: best.map((b) => ({ productId: b.productId, title: b.productTitle, units: b._sum.quantity ?? 0, revenueMinor: b._sum.lineTotalMinor ?? 0 })),
+      bestsellers: best.map((b) => ({ productId: b.productId, title: titles.get(b.productId!) ?? "Deleted product", units: b._sum.quantity ?? 0, revenueMinor: b._sum.lineTotalMinor ?? 0 })),
       lowStock: lowStock.map((l) => ({ ...l, available: Number(l.available), threshold: Number(l.threshold) })),
     });
   }));

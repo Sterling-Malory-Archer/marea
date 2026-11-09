@@ -25,6 +25,8 @@ describe("storefront API", () => {
     expect(res.status).toBe(200);
     expect(res.body.settings.storeName).toBe("MAREA");
     expect(res.body.settings.currency).toBe("EUR");
+    // Footer threshold comes from the Montenegro delivery methods (seeded: free over €100).
+    expect(res.body.settings.freeShippingOverMinor).toBe(10000);
     expect(res.body.announcements.length).toBeGreaterThan(0);
     const women = res.body.navigation.find((n: { slug: string }) => n.slug === "women");
     expect(women.children.map((c: { name: string }) => c.name)).toContain("Dresses");

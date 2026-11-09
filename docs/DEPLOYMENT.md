@@ -34,7 +34,7 @@ pnpm --filter @marea/web start                # storefront (public, behind HTTPS
 
 ## 3. Required production environment
 
-See `.env.example`. In production the API refuses to boot unless `STORAGE_DRIVER=s3` and `COOKIE_SECURE=true`.
+See `.env.example`. In production the API refuses to boot unless `STORAGE_DRIVER=s3`, `COOKIE_SECURE=true`, `MAIL_DRIVER=smtp` and `MEDIA_PUBLIC_BASE_URL` is the bucket/CDN `https://` URL (add that host to `NEXT_PUBLIC_MEDIA_HOSTS` for image optimisation).
 
 ## 4. Note about the development sandbox
 
