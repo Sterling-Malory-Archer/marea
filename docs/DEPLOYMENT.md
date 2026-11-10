@@ -36,7 +36,29 @@ pnpm --filter @marea/web start                # storefront (public, behind HTTPS
 
 See `.env.example`. In production the API refuses to boot unless `STORAGE_DRIVER=s3`, `COOKIE_SECURE=true`, `MAIL_DRIVER=smtp` and `MEDIA_PUBLIC_BASE_URL` is the bucket/CDN `https://` URL (add that host to `NEXT_PUBLIC_MEDIA_HOSTS` for image optimisation).
 
-## 4. Note about the development sandbox
+## 4. Security requirements for the hosting (Phase 9 review)
+
+These are properties of the deployment, not the code — check each one on staging before launch.
+
+- **Only the reverse proxy is public.** Visitors reach a load balancer / reverse proxy (HTTPS) that forwards to the
+  Next.js server. The Next.js port and the API port (4000) must not be reachable from the internet; the API should
+  listen on a private network only.
+- **The proxy must append the visitor's IP to `X-Forwarded-For`** (nginx: `proxy_set_header X-Forwarded-For
+  $proxy_add_x_forwarded_for;`). Next.js passes that header to the API unchanged and the API trusts exactly one hop
+  (`TRUST_PROXY_HOPS=1`), so rate limits and sign-in lockouts apply per visitor. If there are two proxies in front
+  (e.g. CDN + load balancer), set `TRUST_PROXY_HOPS=2`. Getting this wrong either lumps all visitors into one rate
+  limit or lets an attacker pretend to be someone else.
+- **HTTPS everywhere**: `NEXT_PUBLIC_SITE_URL` must start with `https://` (this also turns on
+  `upgrade-insecure-requests` in the Content Security Policy) and `COOKIE_SECURE=true`.
+- **Staging** sets `SITE_INDEXING=off`: robots.txt blocks everything and every page sends `X-Robots-Tag: noindex`.
+- **Content Security Policy** is generated per request in `apps/web/proxy.ts` (nonce-based). When the card payment
+  provider is added (Phase 7), add its checkout origin to `form-action` / `frame-src` there.
+- **Secrets**: `COOKIE_SECRET` (32+ random bytes), database, S3 and SMTP credentials live only in the host's secret
+  store. Rotate `COOKIE_SECRET` → all sessions and guest bags are invalidated (by design).
+- **Dependency audit** runs in CI (`pnpm audit --prod --audit-level=high`); a new advisory fails the build until the
+  package is updated.
+
+## 5. Note about the development sandbox
 
 The sandbox used to build Phases 1–3 blocks `binaries.prisma.sh`, so the Prisma schema engine was compiled from
 Prisma's official source at the exact commit the CLI expects and supplied via `PRISMA_SCHEMA_ENGINE_BINARY`. This

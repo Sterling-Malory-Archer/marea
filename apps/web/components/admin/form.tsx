@@ -334,7 +334,7 @@ export function Drawer({ title, onClose, children }: { title: string; onClose: (
 }
 
 export interface TranslationConfig {
-  entity: "product" | "category" | "collection" | "color" | "heroSlide" | "announcement" | "contentBlock";
+  entity: "product" | "category" | "collection" | "color" | "heroSlide" | "announcement" | "contentBlock" | "page";
   fields: { name: string; label: string; multiline?: boolean; required?: boolean }[];
 }
 
@@ -402,7 +402,7 @@ export function TranslationPanel({ config, id, source, disabled }: { config: Tra
             <div key={f.name}>
               <label htmlFor={`${fid}-${f.name}`} className="mb-1.5 block text-micro text-mute">{f.label} (Montenegrin){f.required && <span aria-hidden> *</span>}</label>
               {f.multiline ? (
-                <textarea id={`${fid}-${f.name}`} rows={4} value={drafts[f.name] ?? ""} onChange={(e) => setDrafts((d) => ({ ...d, [f.name]: e.target.value }))} className={`${inputCls} h-auto py-2 leading-5`} />
+                <textarea id={`${fid}-${f.name}`} rows={f.name === "body" ? 14 : 4} value={drafts[f.name] ?? ""} onChange={(e) => setDrafts((d) => ({ ...d, [f.name]: e.target.value }))} className={`${inputCls} h-auto py-2 leading-5`} />
               ) : (
                 <input id={`${fid}-${f.name}`} value={drafts[f.name] ?? ""} onChange={(e) => setDrafts((d) => ({ ...d, [f.name]: e.target.value }))} className={inputCls} />
               )}
@@ -500,7 +500,7 @@ export function ResourceManager<T extends { id: number }>({
           <table className="w-full border-collapse text-small">
             <thead>
               <tr className="border-b border-line text-left text-micro text-mute">
-                {columns.map((c) => <th key={c.header} scope="col" className="whitespace-nowrap px-4 py-2.5 font-normal">{c.header}</th>)}
+                {columns.map((c, i) => <th key={c.header || i} scope="col" className="whitespace-nowrap px-4 py-2.5 font-normal">{c.header || <span className="sr-only">Image</span>}</th>)}
                 <th scope="col" className="px-4 py-2.5"><span className="sr-only">Actions</span></th>
               </tr>
             </thead>

@@ -49,7 +49,7 @@ export function RevenueChart({ data }: { data: { date: string; salesMinor: numbe
         {ticks.map((t) => (
           <g key={t}>
             <line x1={PAD_L} x2={width - 8} y1={y(t)} y2={y(t)} stroke="#EEECE7" strokeWidth={1} />
-            <text x={PAD_L - 8} y={y(t)} dy="0.32em" textAnchor="end" fontSize="11" fill="#777777">{tickLabel(t)}</text>
+            <text x={PAD_L - 8} y={y(t)} dy="0.32em" textAnchor="end" fontSize="11" fill="#6B6B6B">{tickLabel(t)}</text>
           </g>
         ))}
         {data.map((d, i) => {
@@ -63,7 +63,7 @@ export function RevenueChart({ data }: { data: { date: string; salesMinor: numbe
           return (
             <g key={d.date}>
               {path && <path d={path} fill={SERIES} opacity={hover == null || hover === i ? 1 : 0.55} />}
-              {i % labelEvery === 0 && <text x={x + barW / 2} y={H - 8} textAnchor="middle" fontSize="11" fill="#777777">{fmtDay(d.date)}</text>}
+              {i % labelEvery === 0 && <text x={x + barW / 2} y={H - 8} textAnchor="middle" fontSize="11" fill="#6B6B6B">{fmtDay(d.date)}</text>}
               {/* Hit target spans the whole band and full height. */}
               <rect x={PAD_L + i * band} y={PAD_T} width={band} height={H - PAD_T - PAD_B} fill="transparent" onMouseEnter={() => setHover(i)} onFocus={() => setHover(i)} tabIndex={-1} />
             </g>

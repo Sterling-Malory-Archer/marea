@@ -9,6 +9,7 @@ import { slugify } from "../../lib/util.js";
 import { idParam, patchSchema, validated } from "../../middleware/http.js";
 import { requirePermission } from "../../middleware/auth.js";
 import { audit } from "../audit/audit.js";
+import { pageBody } from "../pages/pages.js";
 
 const opt = (max: number) => z.string().trim().max(max).nullish().transform((v) => v || null);
 const link = z.string().trim().max(500).regex(/^(\/|https:\/\/)/, "Use a path starting with / or an https:// link");
@@ -66,7 +67,7 @@ function crud<T extends z.ZodObject>(
   r: Router,
   ctx: AppContext,
   path: string,
-  delegate: "heroSlide" | "announcementMessage" | "contentBlock",
+  delegate: "heroSlide" | "announcementMessage" | "contentBlock" | "page",
   schema: T,
   orderBy: object,
 ) {
@@ -110,6 +111,7 @@ export function contentRouter(ctx: AppContext) {
   crud(r, ctx, "hero-slides", "heroSlide", heroBody, [{ sortOrder: "asc" }, { id: "asc" }]);
   crud(r, ctx, "announcements", "announcementMessage", announcementBody, [{ sortOrder: "asc" }, { id: "asc" }]);
   crud(r, ctx, "content-blocks", "contentBlock", blockBody, [{ placement: "asc" }, { sortOrder: "asc" }]);
+  crud(r, ctx, "pages", "page", pageBody, [{ slug: "asc" }]);
 
   // ───────────── Collections (with ordered product lists) ─────────────
   r.get("/collections", requirePermission("catalog:read"), async (_req, res) => {

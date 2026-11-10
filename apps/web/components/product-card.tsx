@@ -29,7 +29,8 @@ export function ProductCard({ product }: { product: Card }) {
 
   return (
     <article className="group/card relative">
-      <Link href={href(productHref(product.slug))} className="block" aria-label={product.title}>
+      {/* Image link duplicates the title link below: hidden from assistive tech and the tab order. */}
+      <Link href={href(productHref(product.slug))} className="block" aria-hidden="true" tabIndex={-1}>
         <div className="relative aspect-[3/4] overflow-hidden bg-sand">
           <Frame img={first} colorHex={primaryHex} alt={product.title} className="transition-opacity duration-500" />
           {second && (

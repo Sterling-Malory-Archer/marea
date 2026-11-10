@@ -34,7 +34,7 @@ export default function AdminLogin() {
   }
 
   return (
-    <div className="grid min-h-svh place-items-center px-5">
+    <main className="grid min-h-svh place-items-center px-5">
       <form onSubmit={submit} className="w-full max-w-sm border border-line bg-white p-8" aria-labelledby="t">
         <p className="wordmark text-xl">MAREA</p>
         <h1 id="t" className="mt-6 text-lg">Staff sign-in</h1>
@@ -46,6 +46,6 @@ export default function AdminLogin() {
         </div>
         <p className="mt-6 text-micro text-mute">Forgot your password? Use the store’s password reset with your staff e-mail.</p>
       </form>
-    </div>
+    </main>
   );
 }

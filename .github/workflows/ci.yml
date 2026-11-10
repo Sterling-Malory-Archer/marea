@@ -35,6 +35,8 @@ jobs:
           node-version: 22
           cache: pnpm
       - run: pnpm install --frozen-lockfile
+      - name: Dependency audit (production packages, high and critical)
+        run: pnpm audit --prod --audit-level=high
       - name: Create shadow database
         run: mysql -h 127.0.0.1 -uroot -proot -e "CREATE DATABASE IF NOT EXISTS marea_shadow"
       - run: pnpm --filter @marea/db build

@@ -1,8 +1,8 @@
 import type { Locale } from "../../lib/i18n.js";
+import { escapeHtml as esc } from "../../lib/html.js";
 
 /** Minimal, accessible transactional e-mail layout (inline styles for mail clients). */
 function layout(title: string, paragraphs: string[], cta: { label: string; url: string } | null, footer: string) {
-  const esc = (s: string) => s.replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" })[c]!);
   const html = `<!doctype html><html><body style="margin:0;background:#F8F7F4;color:#202020;font-family:Helvetica,Arial,sans-serif">
 <table role="presentation" width="100%" cellpadding="0" cellspacing="0"><tr><td align="center" style="padding:40px 16px">
 <table role="presentation" width="100%" style="max-width:520px">

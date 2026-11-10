@@ -8,6 +8,7 @@ import path from "node:path";
 import { config as loadEnv } from "dotenv";
 import { hash } from "@node-rs/argon2";
 import { createPrismaClient } from "../src/index.js";
+import { seedPages } from "./seed-pages.js";
 
 loadEnv({ path: path.resolve(import.meta.dirname, "../../../.env"), quiet: true });
 const db = createPrismaClient(process.env.DATABASE_URL!);
@@ -327,6 +328,7 @@ async function main() {
   await content();
   await translations();
   await sizeGuides();
+  await seedPages(db);
   await owner();
   console.log("Done.");
 }

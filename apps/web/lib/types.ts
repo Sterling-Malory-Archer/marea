@@ -248,3 +248,25 @@ export interface Address {
   isDefaultShipping: boolean;
   isDefaultBilling: boolean;
 }
+
+export interface InfoPage {
+  slug: string;
+  kind: "STANDARD" | "CONTACT" | "SHIPPING" | "SIZE_GUIDE" | "LEGAL";
+  title: string;
+  intro: string | null;
+  body: string | null;
+  seoTitle: string | null;
+  seoDescription: string | null;
+  needsReview: boolean;
+  updatedAt: string;
+  zones?: { name: string; countryCodes: string[]; methods: { code: string; name: string; priceMinor: number; freeOverMinor: number | null; minDays: number | null; maxDays: number | null; cashOnDelivery: boolean }[] }[];
+  guides?: { code: string; name: string; guide: { columns: string[]; rows: string[][]; note?: string } }[];
+  contact?: { email: string | null; phone: string | null; instagramUrl: string | null };
+}
+
+export interface SitemapData {
+  products: { slug: string; updatedAt: string }[];
+  categories: { path: string; updatedAt: string }[];
+  collections: { slug: string; updatedAt: string }[];
+  pages: { slug: string; updatedAt: string }[];
+}

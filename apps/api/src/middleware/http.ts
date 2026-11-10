@@ -72,7 +72,9 @@ export function errorHandler(log: Logger): (err: unknown, req: Request, res: Res
     }
     if (err instanceof Prisma.PrismaClientKnownRequestError) {
       if (err.code === "P2002") {
-        res.status(409).json({ error: { code: "CONFLICT", message: "A record with these unique values already exists", details: err.meta } });
+        // Only the field names — not index names or other schema internals.
+        const target = (err.meta as { target?: unknown } | undefined)?.target;
+        res.status(409).json({ error: { code: "CONFLICT", message: "A record with these unique values already exists", details: Array.isArray(target) ? { fields: target } : undefined } });
         return;
       }
       if (err.code === "P2025") {

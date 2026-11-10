@@ -20,6 +20,42 @@ const change = (now: number, prev: number) => {
   return `${pct >= 0 ? "+" : ""}${pct}% vs previous period`;
 };
 
+interface Checklist { items: { key: string; ok: boolean; label: string; detail: string | null; href: string | null }[]; done: number; total: number }
+
+/** Shown until every launch item is done; then it disappears. */
+function LaunchChecklist() {
+  const { data } = useAdminData<Checklist>("/api/admin/dashboard/launch-checklist");
+  const [open, setOpen] = useState(true);
+  if (!data || data.done === data.total) return null;
+  return (
+    <section className="mb-6 border border-line bg-white" aria-labelledby="launch-title">
+      <button type="button" onClick={() => setOpen(!open)} aria-expanded={open} className="flex w-full items-center justify-between px-5 py-4 text-left">
+        <span>
+          <span id="launch-title" className="font-medium">Before launch</span>
+          <span className="ml-3 text-small text-mute">{data.done} of {data.total} done</span>
+        </span>
+        <span aria-hidden className="text-mute">{open ? "−" : "+"}</span>
+      </button>
+      <div className="mx-5 h-1 bg-sand" aria-hidden><div className="h-1 bg-ink" style={{ width: `${(data.done / data.total) * 100}%` }} /></div>
+      {open && (
+        <ul className="divide-y divide-line px-5 pb-2 pt-3">
+          {data.items.map((i) => (
+            <li key={i.key} className="flex items-start gap-3 py-2.5 text-small">
+              <span aria-hidden className={`mt-0.5 flex size-4 shrink-0 items-center justify-center rounded-full border text-[10px] ${i.ok ? "border-ink bg-ink text-paper" : "border-ink/30"}`}>{i.ok ? "✓" : ""}</span>
+              <span className="sr-only">{i.ok ? "Done:" : "To do:"}</span>
+              <span className="flex-1">
+                <span className={i.ok ? "text-mute line-through decoration-ink/20" : ""}>{i.label}</span>
+                {!i.ok && i.detail && <span className="block text-micro text-mute">{i.detail}</span>}
+              </span>
+              {!i.ok && i.href && <Link href={i.href} className="text-small underline underline-offset-2">Open</Link>}
+            </li>
+          ))}
+        </ul>
+      )}
+    </section>
+  );
+}
+
 export default function DashboardPage() {
   const [days, setDays] = useState("30");
   const { data } = useAdminData<Dashboard>(`/api/admin/dashboard?days=${days}`);
@@ -30,6 +66,7 @@ export default function DashboardPage() {
         subtitle="Sales count orders that are paid, being prepared, shipped or delivered (cash on delivery counts when placed)."
         actions={<Select label="Period" value={days} onChange={setDays} options={[["7", "Last 7 days"], ["30", "Last 30 days"], ["90", "Last 90 days"], ["365", "Last 12 months"]]} />}
       />
+      <LaunchChecklist />
       {data && (
         <div className="space-y-6">
           <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">

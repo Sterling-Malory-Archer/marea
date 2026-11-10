@@ -11,6 +11,7 @@ import { listProducts, loadCategory, loadCollection, SORTS } from "../catalog/ca
 import { getProductDetail } from "../catalog/product-detail.service.js";
 import { productCardInclude, toProductCard } from "../catalog/product-card.js";
 import { getSettings } from "../settings/settings.js";
+import { loadPage, pageSlug } from "../pages/pages.js";
 
 const activeWindow = (now: Date) => ({
   isActive: true,
@@ -97,6 +98,29 @@ export function storefrontRouter(ctx: AppContext) {
         })),
     });
   }));
+
+  /** Information pages (/help/…, /about) with live delivery prices, size guides or contact details. */
+  r.get("/pages/*slug", validated({ query: localeOnly }, async (req, res, { query: { locale } }) => {
+    const raw = (req.params as { slug?: string[] | string }).slug;
+    const parsed = pageSlug.safeParse(Array.isArray(raw) ? raw.join("/") : raw);
+    const page = parsed.success ? await loadPage(ctx.db, parsed.data, locale) : null;
+    if (!page) throw notFound("Page");
+    res.set("Cache-Control", PUBLIC_CACHE);
+    res.json(page);
+  }));
+
+  /** Everything indexable, for sitemap.xml. Locale-independent: slugs are shared by both languages. */
+  r.get("/sitemap", async (_req, res) => {
+    const now = new Date();
+    const [products, categories, collections, pages] = await Promise.all([
+      ctx.db.product.findMany({ where: published(now), select: { slug: true, updatedAt: true }, orderBy: { id: "asc" } }),
+      ctx.db.category.findMany({ where: { isActive: true }, select: { path: true, updatedAt: true }, orderBy: { path: "asc" } }),
+      ctx.db.collection.findMany({ where: { isActive: true }, select: { slug: true, updatedAt: true }, orderBy: { sortOrder: "asc" } }),
+      ctx.db.page.findMany({ where: { isPublished: true }, select: { slug: true, updatedAt: true }, orderBy: { slug: "asc" } }),
+    ]);
+    res.set("Cache-Control", "public, max-age=600");
+    res.json({ products, categories, collections, pages });
+  });
 
   /** Homepage content, entirely database-driven. */
   r.get("/home", validated({ query: localeOnly }, async (_req, res, { query: { locale } }) => {

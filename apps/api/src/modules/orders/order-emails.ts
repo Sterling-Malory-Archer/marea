@@ -2,6 +2,7 @@ import type { Order, OrderItem, Shipment } from "@marea/db";
 import type { AppContext } from "../../context.js";
 import type { Locale } from "../../lib/i18n.js";
 import { storefrontUrl } from "../customers/auth.routes.js";
+import { escapeHtml as esc } from "../../lib/html.js";
 
 type Kind = "confirmation" | "shipped" | "delivered" | "cancelled";
 
@@ -24,7 +25,6 @@ const copy = {
   },
 } as const;
 
-const esc = (s: string) => s.replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" })[c]!);
 
 export function renderOrderEmail(
   ctx: AppContext,

@@ -27,8 +27,10 @@ import { contentRouter } from "./modules/admin/content.routes.js";
 export function createApp(ctx: AppContext) {
   const app = express();
   app.disable("x-powered-by");
-  // Behind exactly one reverse proxy (Next.js / load balancer) in every environment.
-  app.set("trust proxy", 1);
+  // How many proxies sit in front of the API and append to X-Forwarded-For. The
+  // Next.js rewrite passes the header through without adding a hop, so behind a
+  // load balancer that appends the client IP this stays 1. See docs/DEPLOYMENT.md.
+  app.set("trust proxy", ctx.env.TRUST_PROXY_HOPS);
 
   app.use((req, res, next) => {
     const incoming = req.get("x-request-id");

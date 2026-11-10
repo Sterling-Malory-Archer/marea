@@ -12,6 +12,9 @@ const AUTOPLAY_MS = 7000;
 export function Hero({ slides }: { slides: HeroSlide[] }) {
   const [active, setActive] = useState(0);
   const [paused, setPaused] = useState(false);
+  // The first slide paints immediately (no fade) so the headline counts as visible at once.
+  const [moved, setMoved] = useState(false);
+  useEffect(() => { if (active !== 0) setMoved(true); }, [active]);
   const { t, href } = useI18n();
 
   useEffect(() => {
@@ -39,7 +42,7 @@ export function Hero({ slides }: { slides: HeroSlide[] }) {
         key={s.id}
         aria-roledescription="slide"
         aria-label={t.home.slideOf(active + 1, slides.length)}
-        className="grid animate-[fade_0.7s_ease] lg:min-h-[min(calc(100svh-6.75rem),52rem)] lg:grid-cols-12"
+        className={`grid ${moved ? "animate-[fade_0.7s_ease]" : ""} lg:min-h-[min(calc(100svh-6.75rem),52rem)] lg:grid-cols-12`}
       >
         {/* Colour field + photograph. On large screens the photo crosses the seam into the text panel. */}
         <div
@@ -104,12 +107,12 @@ export function Hero({ slides }: { slides: HeroSlide[] }) {
               key={slide.id}
               type="button"
               onClick={() => setActive(i)}
-              aria-label={t.home.showSlide(i + 1, slides.length, slide.headline)}
               aria-current={i === active}
               className="group flex items-center gap-2 py-1 text-micro text-ink lg:flex-col"
             >
-              <span className={`tabular-nums transition-opacity ${i === active ? "opacity-100" : "opacity-45 group-hover:opacity-80"}`}>
+              <span className={`tabular-nums transition-opacity ${i === active ? "opacity-100" : "opacity-70 group-hover:opacity-100"}`}>
                 {String(i + 1).padStart(2, "0")}
+                <span className="sr-only"> — {t.home.showSlide(i + 1, slides.length, slide.headline)}</span>
               </span>
               <span
                 className={`block bg-ink transition-all duration-500 max-lg:h-px lg:w-px ${i === active ? "max-lg:w-8 lg:h-10" : "max-lg:w-3 lg:h-3 opacity-40"}`}

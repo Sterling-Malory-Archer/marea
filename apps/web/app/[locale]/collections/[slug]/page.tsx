@@ -1,9 +1,9 @@
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { ListingView } from "@/components/listing/listing-view";
-import { getCollection, getListing } from "@/lib/api";
+import { getCollection, getLayout, getListing } from "@/lib/api";
 import type { Locale } from "@/lib/i18n";
-import { alternates } from "@/lib/seo";
+import { alternates, share } from "@/lib/seo";
 import type { SP } from "@/lib/url";
 
 type Props = { params: Promise<{ locale: string; slug: string }>; searchParams: Promise<SP> };
@@ -17,7 +17,10 @@ async function load({ params }: Props) {
 
 export async function generateMetadata(props: Props): Promise<Metadata> {
   const { locale, collection } = await load(props);
-  return { title: collection.seoTitle ?? collection.title, description: collection.seoDescription ?? collection.description ?? undefined, alternates: alternates(locale, `/collections/${collection.slug}`) };
+  const { settings } = await getLayout(locale);
+  const title = collection.seoTitle ?? collection.title;
+  const description = collection.seoDescription ?? collection.description ?? undefined;
+  return { title, description, alternates: alternates(locale, `/collections/${collection.slug}`), ...share(locale, settings.storeName, { title, description, image: collection.imageUrl ?? null, path: `/collections/${collection.slug}` }) };
 }
 
 export default async function CollectionPage(props: Props) {

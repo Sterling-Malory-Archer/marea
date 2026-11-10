@@ -22,6 +22,7 @@ const ENTITIES = {
   color: { delegate: "colorTranslation", fk: "colorId", parent: "color", permission: "catalog:write", schema: z.object({ name: req(60) }) },
   heroSlide: { delegate: "heroSlideTranslation", fk: "heroSlideId", parent: "heroSlide", permission: "content:write", schema: z.object({ eyebrow: opt(80), headline: req(120), body: opt(400), primaryCtaLabel: opt(40), secondaryCtaLabel: opt(40), imageAlt: opt(255) }) },
   announcement: { delegate: "announcementTranslation", fk: "announcementId", parent: "announcementMessage", permission: "content:write", schema: z.object({ message: req(200), linkLabel: opt(60) }) },
+  page: { delegate: "pageTranslation", fk: "pageId", parent: "page", permission: "content:write", schema: z.object({ title: req(160), intro: opt(500), body: opt(50000), seoTitle: opt(160), seoDescription: opt(320) }) },
   contentBlock: { delegate: "contentBlockTranslation", fk: "contentBlockId", parent: "contentBlock", permission: "content:write", schema: z.object({ eyebrow: opt(80), title: req(160), body: opt(20000), ctaLabel: opt(40), imageAlt: opt(255) }) },
 } as const satisfies Record<string, { delegate: string; fk: string; parent: string; permission: Permission; schema: z.ZodType }>;
 

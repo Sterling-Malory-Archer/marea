@@ -4,13 +4,16 @@ import { Editorial, FeaturedCollections, ProductRail, ServiceStrip } from "@/com
 import { getHome, getLayout } from "@/lib/api";
 import { isLocale, type Locale } from "@/lib/i18n";
 import { getMessages } from "@/lib/messages";
-import { alternates } from "@/lib/seo";
+import { absolute, alternates, jsonLd, share } from "@/lib/seo";
+import { localePath } from "@/lib/i18n";
 
 type Props = { params: Promise<{ locale: string }> };
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
-  const { locale } = await params;
-  return { alternates: alternates(isLocale(locale) ? locale : "en", "/") };
+  const raw = (await params).locale;
+  const locale: Locale = isLocale(raw) ? raw : "en";
+  const { settings } = await getLayout(locale);
+  return { alternates: alternates(locale, "/"), ...share(locale, settings.storeName, { title: `${settings.storeName} — ${settings.tagline}`, description: settings.tagline, path: "/" }) };
 }
 
 export default async function HomePage({ params }: Props) {
@@ -18,17 +21,31 @@ export default async function HomePage({ params }: Props) {
   const [home, layout] = await Promise.all([getHome(locale), getLayout(locale)]);
   const t = getMessages(locale);
 
-  const orgJsonLd = {
-    "@context": "https://schema.org",
-    "@type": "Organization",
-    name: layout.settings.storeName,
-    url: process.env.NEXT_PUBLIC_SITE_URL ?? "http://localhost:3000",
-    ...(layout.settings.instagramUrl ? { sameAs: [layout.settings.instagramUrl] } : {}),
-  };
+  const orgJsonLd = [
+    {
+      "@context": "https://schema.org",
+      "@type": "Organization",
+      "@id": absolute("/#organization"),
+      name: layout.settings.storeName,
+      url: absolute("/"),
+      logo: absolute("/icon.svg"),
+      ...(layout.settings.supportEmail ? { email: layout.settings.supportEmail } : {}),
+      ...(layout.settings.instagramUrl ? { sameAs: [layout.settings.instagramUrl] } : {}),
+    },
+    {
+      "@context": "https://schema.org",
+      "@type": "WebSite",
+      name: layout.settings.storeName,
+      url: absolute(localePath(locale, "/")),
+      inLanguage: locale === "me" ? "sr-Latn-ME" : "en",
+      publisher: { "@id": absolute("/#organization") },
+      potentialAction: { "@type": "SearchAction", target: `${absolute(localePath(locale, "/search"))}?q={search_term_string}`, "query-input": "required name=search_term_string" },
+    },
+  ];
 
   return (
     <>
-      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(orgJsonLd).replace(/</g, "\\u003c") }} />
+      <script type="application/ld+json" dangerouslySetInnerHTML={jsonLd(orgJsonLd)} />
       <Hero slides={home.hero} />
       <ServiceStrip items={home.services} locale={locale} />
       <ProductRail id="new-arrivals" title={t.home.newArrivals} href="/new" products={home.newArrivals} locale={locale} />

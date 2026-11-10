@@ -4,6 +4,7 @@ import type { OrderStatus } from "@marea/db";
 import type { AppContext } from "../../context.js";
 import { validated } from "../../middleware/http.js";
 import { requirePermission } from "../../middleware/auth.js";
+import { getSettings } from "../settings/settings.js";
 
 /** Orders that count as sales: placed and not cancelled/failed (COD counts when placed). */
 export const SALE_STATUSES: OrderStatus[] = ["PAID", "PROCESSING", "SHIPPED", "DELIVERED"];
@@ -13,6 +14,30 @@ const localDay = (d: Date) => new Intl.DateTimeFormat("en-CA", { timeZone: STORE
 
 export function dashboardRouter(ctx: AppContext) {
   const r = Router();
+
+  /** What still stands between this installation and a real launch. Only facts the software can check. */
+  r.get("/dashboard/launch-checklist", requirePermission("dashboard:read"), async (_req, res) => {
+    const [settings, reviewPages, demoProducts, demoCoupons, placeholderImages, activeProducts] = await Promise.all([
+      getSettings(ctx.db),
+      ctx.db.page.findMany({ where: { needsReview: true, isPublished: true }, select: { title: true, slug: true } }),
+      ctx.db.product.count({ where: { reference: { startsWith: "DEMO-" } } }),
+      ctx.db.coupon.count({ where: { code: { startsWith: "DEMO" }, isActive: true } }),
+      ctx.db.productImage.count({ where: { isPlaceholder: true, product: { status: "ACTIVE" } } }),
+      ctx.db.product.count({ where: { status: "ACTIVE" } }),
+    ]);
+    const companyMissing = (["company.name", "company.address", "company.taxId", "company.registrationNo"] as const).filter((k) => !settings[k]);
+    const items = [
+      { key: "company", ok: companyMissing.length === 0, label: "Company details for documents and legal pages", detail: companyMissing.length ? `Missing: ${companyMissing.map((k) => k.split(".")[1]).join(", ")}` : null, href: "/admin/settings" },
+      { key: "support", ok: !!settings["store.supportEmail"], label: "Customer service e-mail", detail: null, href: "/admin/settings" },
+      { key: "alerts", ok: !!settings["notifications.orderEmail"], label: "New-order alert inbox", detail: null, href: "/admin/settings" },
+      { key: "mail", ok: ctx.env.MAIL_DRIVER === "smtp", label: "E-mail sending (SMTP) connected", detail: ctx.env.MAIL_DRIVER === "smtp" ? null : "E-mails are only written to the server log", href: null },
+      { key: "pages", ok: reviewPages.length === 0, label: "Information and legal pages approved", detail: reviewPages.length ? `Draft text: ${reviewPages.map((p) => p.title).join(", ")}` : null, href: "/admin/content?tab=pages" },
+      { key: "catalogue", ok: activeProducts - demoProducts > 0, label: "Real products published", detail: null, href: "/admin/products" },
+      { key: "photos", ok: placeholderImages === 0, label: "Placeholder photos replaced on live products", detail: placeholderImages ? `${placeholderImages} placeholder image(s)` : null, href: "/admin/products" },
+      { key: "demo", ok: demoProducts === 0 && demoCoupons === 0, label: "Demo products and codes removed", detail: demoProducts || demoCoupons ? `${demoProducts} demo product(s), ${demoCoupons} demo code(s)` : null, href: "/admin/products?q=DEMO-" },
+    ];
+    res.json({ items, done: items.filter((i) => i.ok).length, total: items.length });
+  });
 
   r.get("/dashboard", requirePermission("dashboard:read"), validated({ query: z.object({ days: z.coerce.number().int().min(1).max(366).default(30) }) }, async (_req, res, { query }) => {
     const now = new Date();

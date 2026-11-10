@@ -1,5 +1,3 @@
-import "@fontsource-variable/bodoni-moda/opsz.css";
-import "@fontsource-variable/jost";
 import "../globals.css";
 import type { Metadata, Viewport } from "next";
 import { notFound } from "next/navigation";
@@ -12,11 +10,12 @@ import { I18nProvider } from "@/lib/i18n-client";
 import { StoreProvider } from "@/lib/store";
 import { BagDrawer } from "@/components/bag/bag-drawer";
 import { getMessages } from "@/lib/messages";
+import { fontVariables } from "../fonts/fonts";
+import { share, SITE_URL } from "@/lib/seo";
 
 // Rendered per request (with a short data cache) so admin edits appear quickly.
 export const dynamic = "force-dynamic";
 
-const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL ?? "http://localhost:3000";
 
 type Props = { params: Promise<{ locale: string }> };
 
@@ -32,7 +31,8 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
     metadataBase: new URL(SITE_URL),
     title: { default: `${settings.storeName} — ${settings.tagline}`, template: `%s — ${settings.storeName}` },
     description: settings.tagline,
-    openGraph: { siteName: settings.storeName, type: "website", locale: LOCALE_META[locale].og },
+    ...share(locale, settings.storeName, {}),
+    formatDetection: { telephone: false, email: false, address: false },
   };
 }
 
@@ -45,7 +45,7 @@ export default async function LocaleLayout({ children, params }: Props & { child
   const layout = await getLayout(locale);
   const t = getMessages(locale);
   return (
-    <html lang={LOCALE_META[locale].htmlLang}>
+    <html lang={LOCALE_META[locale].htmlLang} className={fontVariables}>
       <body className="min-h-svh">
         <I18nProvider locale={locale}>
           <StoreProvider>

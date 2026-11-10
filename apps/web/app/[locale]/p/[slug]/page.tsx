@@ -3,14 +3,13 @@ import { notFound } from "next/navigation";
 import { ProductRail } from "@/components/home-sections";
 import { breadcrumbJsonLd, Breadcrumbs } from "@/components/listing/listing-view";
 import { ProductView } from "@/components/product/product-view";
-import { getProduct } from "@/lib/api";
+import { getLayout, getProduct } from "@/lib/api";
 import { categoryHref, productHref } from "@/lib/format";
 import { localePath, type Locale } from "@/lib/i18n";
 import { getMessages } from "@/lib/messages";
-import { alternates } from "@/lib/seo";
+import { absolute, alternates, share } from "@/lib/seo";
 
 type Props = { params: Promise<{ locale: string; slug: string }> };
-const SITE = process.env.NEXT_PUBLIC_SITE_URL ?? "http://localhost:3000";
 
 async function load({ params }: Props) {
   const { locale, slug } = await params;
@@ -23,18 +22,19 @@ export async function generateMetadata(props: Props): Promise<Metadata> {
   const { locale, product } = await load(props);
   const description = product.seoDescription ?? product.description?.slice(0, 160) ?? undefined;
   const firstImage = product.colors[0]?.images.find((i) => i.url)?.url;
+  const { settings } = await getLayout(locale);
   return {
     title: product.seoTitle ?? (product.brand ? `${product.title} — ${product.brand.name}` : product.title),
     description,
     alternates: alternates(locale, productHref(product.slug)),
-    openGraph: { type: "website", title: product.title, description, ...(firstImage ? { images: [{ url: firstImage }] } : {}) },
+    ...share(locale, settings.storeName, { title: product.title, description, image: firstImage ?? null, path: productHref(product.slug) }),
   };
 }
 
 export default async function ProductPage(props: Props) {
   const { locale, product } = await load(props);
   const t = getMessages(locale);
-  const url = SITE + localePath(locale, productHref(product.slug));
+  const url = absolute(localePath(locale, productHref(product.slug)));
 
   // schema.org Product: one Offer per purchasable variant.
   const productLd = {
@@ -44,7 +44,7 @@ export default async function ProductPage(props: Props) {
     description: product.description ?? undefined,
     sku: product.reference,
     brand: product.brand ? { "@type": "Brand", name: product.brand.name } : undefined,
-    image: product.colors.flatMap((c) => c.images.filter((i) => i.url).map((i) => i.url)),
+    image: product.colors.flatMap((c) => c.images.filter((i) => i.url).map((i) => absolute(i.url!))),
     color: product.colors.map((c) => c.name).join(", "),
     offers: product.variants.map((v) => ({
       "@type": "Offer",
@@ -57,7 +57,7 @@ export default async function ProductPage(props: Props) {
     })),
   };
   const crumbs = breadcrumbJsonLd([
-    ...product.breadcrumbs.map((b) => ({ name: b.name, url: SITE + localePath(locale, categoryHref(b.path)) })),
+    ...product.breadcrumbs.map((b) => ({ name: b.name, url: absolute(localePath(locale, categoryHref(b.path))) })),
     { name: product.title, url },
   ]);
 

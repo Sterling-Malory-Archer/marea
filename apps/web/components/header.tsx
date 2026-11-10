@@ -256,7 +256,7 @@ function MobileDrawer({ open, onClose, items, storeName, basePath }: { open: boo
 export function LanguageSwitch({ basePath, className = "", tabIndex }: { basePath: string; className?: string; tabIndex?: number }) {
   const { locale, t } = useI18n();
   return (
-    <nav aria-label={t.nav.language} className={`flex items-center gap-1 text-micro tracking-[0.06em] ${className}`}>
+    <div role="group" aria-label={t.nav.language} className={`flex items-center gap-1 text-micro tracking-[0.06em] ${className}`}>
       {LOCALES.map((l, i) => (
         <span key={l} className="flex items-center gap-1">
           {i > 0 && <span aria-hidden className="text-line">/</span>}
@@ -277,6 +277,6 @@ export function LanguageSwitch({ basePath, className = "", tabIndex }: { basePat
           </a>
         </span>
       ))}
-    </nav>
+    </div>
   );
 }

@@ -27,6 +27,7 @@ const schema = z
     S3_SECRET_ACCESS_KEY: z.string().default(""),
     S3_FORCE_PATH_STYLE: bool.default(true),
     MAIL_DRIVER: z.enum(["log", "smtp"]).default("log"),
+    TRUST_PROXY_HOPS: z.coerce.number().int().min(0).max(5).default(1),
     MAIL_FROM: z.string().default("MAREA <no-reply@example.com>"),
     SMTP_HOST: z.string().default(""),
     SMTP_PORT: z.coerce.number().int().positive().default(587),

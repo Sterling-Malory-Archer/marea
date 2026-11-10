@@ -9,6 +9,7 @@ import { reserve } from "../inventory/inventory.service.js";
 import { sendOrderEmail } from "../orders/order-emails.js";
 import { commitOrderStock, uniqueOrderNumber } from "../orders/order.service.js";
 import { getSettings } from "../settings/settings.js";
+import { escapeHtml as esc } from "../../lib/html.js";
 
 export interface AddressInput {
   firstName: string;
@@ -232,7 +233,7 @@ export async function placeOrder(ctx: AppContext, req: Request, res: Response, i
     const admin = `${ctx.env.PUBLIC_WEB_URL.replace(/\/$/, "")}/admin/orders/${order.orderNumber}`;
     const total = new Intl.NumberFormat("en-IE", { style: "currency", currency: order.currency }).format(order.totalMinor / 100);
     await ctx.mailer
-      .send({ to, subject: `New order ${order.orderNumber} — ${total}`, text: `New ${isCod ? "cash-on-delivery" : "online"} order ${order.orderNumber} from ${order.customerFirstName} ${order.customerLastName} (${order.email}), ${total}.\n${admin}`, html: `<p>New ${isCod ? "cash-on-delivery" : "online"} order <a href="${admin}">${order.orderNumber}</a> from ${order.customerFirstName} ${order.customerLastName}, ${total}.</p>` })
+      .send({ to, subject: `New order ${order.orderNumber} — ${total}`, text: `New ${isCod ? "cash-on-delivery" : "online"} order ${order.orderNumber} from ${order.customerFirstName} ${order.customerLastName} (${order.email}), ${total}.\n${admin}`, html: `<p>New ${isCod ? "cash-on-delivery" : "online"} order <a href="${esc(admin)}">${esc(order.orderNumber)}</a> from ${esc(order.customerFirstName)} ${esc(order.customerLastName)}, ${esc(total)}.</p>` })
       .catch((err) => ctx.log.error({ err }, "Staff order notification failed"));
   }
   return { order, accessToken, replay: false };

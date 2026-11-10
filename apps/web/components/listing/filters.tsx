@@ -158,7 +158,7 @@ export function SortSelect({ sort, sp, allowRelevance }: { sort: SortKey; sp: SP
   const options = (Object.keys(t.listing.sort) as SortKey[]).filter((k) => allowRelevance || k !== "relevance");
   return (
     <div className="flex items-center gap-2">
-      <label htmlFor={id} className="hidden text-small text-mute sm:inline">{t.listing.sortBy}</label>
+      <label htmlFor={id} className="sr-only text-small text-mute sm:not-sr-only">{t.listing.sortBy}</label>
       <select
         id={id}
         value={sort}

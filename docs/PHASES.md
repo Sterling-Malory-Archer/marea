@@ -10,7 +10,7 @@
 | 6 | Checkout, orders, inventory reservations | ✅ Done |
 | 7 | Payment provider + webhooks | ⏸ Deferred — waiting for the merchant decision (see below) |
 | 8 | Admin dashboard UI, e-mails, shipping | ✅ Done |
-| 9 | SEO, performance, security hardening, responsive QA | |
+| 9 | SEO, performance, security hardening, responsive QA | ✅ Done |
 | 10 | End-to-end tests, staging, launch | |
 
 ## Phase 1 — acceptance
@@ -97,11 +97,29 @@
 - [x] Fixes found while building: saving one setting no longer resets the others (Zod `.partial()` defaults); a product's main category always stays linked; the footer's free-delivery line now comes from the Montenegro delivery methods (the duplicate setting was removed); development media are served from `/media` so Next.js image optimisation works.
 - [x] 93 API tests passing in random order; end-to-end browser run creating, stocking, photographing, publishing and translating a product through the UI, then checking it on `/me/p/…`.
 
+## Phase 9 — acceptance
+
+- [x] **Information pages** (contact, delivery, returns, size guide, about, privacy, terms of sale) — bilingual, edited in Admin → Homepage & content → Pages, at any address (`/help/…`). Pages can add live data: delivery prices/times from the delivery settings, every size guide, contact details. Text uses a small safe Markdown subset (no HTML from the database reaches the page) and `{{tokens}}` filled from Settings (company name, PIB, return days…). Starter texts are marked **Draft** and show a "being finalised" note until approved; privacy policy and terms describe what the software actually does with data and cookies but **must be checked by a lawyer**.
+- [x] Footer links all resolve; the unused "Journal" link was removed; footer and page wording aligned ("Returns within 14 days" instead of "free exchanges").
+- [x] **SEO**: `sitemap.xml` (products, categories, collections, pages, each with its Montenegrin alternate), `robots.txt` (private pages excluded; staging blocks everything via `SITE_INDEXING=off`), Open Graph + Twitter cards on every page with a branded default share image, Organization + WebSite (site search) structured data, absolute image URLs in Product data. Lighthouse SEO 100 on all audited pages.
+- [x] **Performance**: fonts self-hosted through Next.js with the Latin subset preloaded and Montenegrin letters (č ć š ž đ) loaded only when used; first hero slide paints without a fade; optimised images cached for 31 days (upload keys are unique). Lighthouse mobile (simulated slow 4G): home 86–89, category 86–94, product 95–97, info page 88–91; CLS 0.
+- [x] **Accessibility**: Lighthouse 100 on home, category, product and information pages; axe-core sweep of bag, checkout, account, search, wishlist and admin screens. Secondary text darkened from #777777 to #6B6B6B to reach 4.5:1 contrast on all backgrounds; duplicate links hidden from screen readers; slide and gallery buttons named after their visible text; unique landmarks; heading order.
+- [x] **Security**:
+  - strict, nonce-based Content Security Policy on every storefront and admin page (only the app's own scripts can run), plus `X-Frame-Options`, `Cross-Origin-Opener-Policy`, HSTS, Referrer and Permissions policies;
+  - e-mail library upgraded (nodemailer 7 → 10; `pnpm audit`: no known vulnerabilities) and an audit step added to CI;
+  - fixed: customer names were inserted unescaped into the staff new-order e-mail;
+  - duplicate-value errors no longer reveal database index names;
+  - rate limiting depends on the hosting forwarding visitor IPs correctly — requirement documented (DEPLOYMENT.md §4) and `TRUST_PROXY_HOPS` made configurable.
+- [x] **Launch checklist** on the admin dashboard: company details, support and alert e-mails, SMTP connected, draft pages, real products, placeholder photos, demo data — disappears when everything is done.
+- [x] Cookies: only strictly necessary cookies (session, bag, language) — no consent banner needed today; the privacy page lists them. A consent banner is required before adding analytics or advertising tags.
+- [x] 105 API tests in random order; end-to-end browser runs (checkout EN/ME/member, full admin product flow) with no CSP violations.
+
 ## Owner actions before launch
 
 - **SMTP provider** for transactional e-mail (e.g. Postmark, Mailgun, Amazon SES, or your host's SMTP), plus SPF/DKIM DNS records for the sending domain. Set `MAIL_DRIVER=smtp` and the `SMTP_*` variables.
 - Delete the `DEMO10` code (or run `pnpm --filter @marea/db seed:demo --purge`).
 - Fill in **Settings → Company details** (legal name, PIB, registration number, address) and the **order-alert inbox**.
+- Review the starter pages (Admin → Homepage & content → Pages); have the **privacy policy and terms of sale checked by a lawyer**, then untick "Draft text".
 - **Fiscalisation:** Montenegro requires fiscal receipts. The admin's order documents are not fiscal invoices; the fiscal receipt must come from your certified fiscalisation software/service (to be connected or run alongside — decide with your accountant).
 
 ## Phase 7 prerequisites (owner action)
@@ -122,3 +140,5 @@ currencies (EUR), refund API access. Until then the footer lists only cash on de
 | 2026-11-08 | Abacus environment not yet provisioned; deployment target stays portable (Node 22 + MySQL 8). |
 | 2026-11-09 | Phase 7 (card payments) **deferred** until the payment merchant is chosen; checkout offers cash on delivery meanwhile. |
 | 2026-11-09 | The admin is **English-only**; every customer-facing text it edits has an English and a Montenegrin version. |
+| 2026-11-10 | Secondary text colour **#6B6B6B** instead of the brief's #777777 — visually almost identical, but #777777 fails WCAG AA contrast (4.17:1) on the paper background. |
+| 2026-11-10 | Information/legal pages are owner-editable CMS pages; starter drafts provided, flagged for legal review. |

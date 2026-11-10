@@ -1,6 +1,6 @@
 import "server-only";
 import type { Locale } from "./i18n";
-import type { CategoryInfo, CollectionInfo, Home, Layout, Listing, ProductDetail } from "./types";
+import type { CategoryInfo, CollectionInfo, Home, InfoPage, Layout, Listing, ProductDetail, SitemapData } from "./types";
 
 const API = process.env.API_INTERNAL_URL ?? "http://127.0.0.1:4000";
 
@@ -30,6 +30,10 @@ export const getHome = async (locale: Locale) => must(await get<Home>("/api/stor
 export const getCategory = (path: string, locale: Locale) => get<CategoryInfo>(`/api/store/categories/${path}`, { locale });
 export const getCollection = (slug: string, locale: Locale) => get<CollectionInfo>(`/api/store/collections/${encodeURIComponent(slug)}`, { locale });
 export const getProduct = (slug: string, locale: Locale) => get<ProductDetail>(`/api/store/products/${encodeURIComponent(slug)}`, { locale });
+
+export const getPage = (slug: string, locale: Locale) =>
+  /^[a-z0-9-]+(\/[a-z0-9-]+)?$/.test(slug) ? get<InfoPage>(`/api/store/pages/${slug}`, { locale }, 300) : Promise.resolve(null);
+export const getSitemapData = async () => must(await get<SitemapData>("/api/store/sitemap", {}, 600), "sitemap");
 
 export const LISTING_PARAMS = ["q", "brand", "size", "color", "minPrice", "maxPrice", "inStock", "sale", "sort", "page"] as const;
 

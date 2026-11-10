@@ -160,6 +160,8 @@ export function ListingView({
               {chips.length > 0 && <Link href={clearAll} className="btn btn-outline mt-8">{L.clearAll}</Link>}
             </div>
           ) : (
+            <>
+            <h2 className="sr-only">{L.productsHeading}</h2>
             <ul className="mt-8 grid grid-cols-2 gap-x-3 gap-y-10 sm:gap-x-5 md:grid-cols-3 lg:gap-x-6 lg:gap-y-14">
               {listing.items.map((p) => (
                 <li key={p.id}>
@@ -167,6 +169,7 @@ export function ListingView({
                 </li>
               ))}
             </ul>
+            </>
           )}
 
           {listing.pageCount > 1 && <Pagination listing={listing} sp={sp} locale={locale} />}

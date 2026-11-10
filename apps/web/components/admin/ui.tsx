@@ -82,7 +82,7 @@ export function Table({ head, children, empty }: { head: React.ReactNode[]; chil
         <thead>
           <tr className="border-b border-line text-left text-micro text-mute">
             {head.map((h, i) => (
-              <th key={i} scope="col" className="whitespace-nowrap px-4 py-2.5 font-normal">{h}</th>
+              <th key={i} scope="col" className="whitespace-nowrap px-4 py-2.5 font-normal">{h === "" ? <span className="sr-only">{i === 0 ? "Image" : "Actions"}</span> : h}</th>
             ))}
           </tr>
         </thead>

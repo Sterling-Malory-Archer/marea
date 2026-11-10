@@ -1147,3 +1147,49 @@ model ContentBlockTranslation {
   @@id([contentBlockId, locale])
   @@map("content_block_translations")
 }
+
+/// What a page adds beside its text: live delivery prices, size guides or contact details.
+enum PageKind {
+  STANDARD
+  CONTACT
+  SHIPPING
+  SIZE_GUIDE
+  LEGAL
+}
+
+/// Editable information pages (/help/…, /about). Text uses a small, safe Markdown subset.
+model Page {
+  id             Int      @id @default(autoincrement())
+  slug           String   @unique @db.VarChar(120)
+  kind           PageKind @default(STANDARD)
+  title          String   @db.VarChar(160)
+  intro          String?  @db.VarChar(500)
+  body           String?  @db.Text
+  seoTitle       String?  @db.VarChar(160)
+  seoDescription String?  @db.VarChar(320)
+  isPublished    Boolean  @default(true)
+  /// Draft text supplied by the developer — shows a "being finalised" note until the owner approves it.
+  needsReview    Boolean  @default(false)
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  translations PageTranslation[]
+
+  @@map("pages")
+}
+
+model PageTranslation {
+  pageId         Int
+  locale         String   @db.VarChar(10)
+  title          String   @db.VarChar(160)
+  intro          String?  @db.VarChar(500)
+  body           String?  @db.Text
+  seoTitle       String?  @db.VarChar(160)
+  seoDescription String?  @db.VarChar(320)
+  updatedAt      DateTime @updatedAt
+
+  page Page @relation(fields: [pageId], references: [id], onDelete: Cascade)
+
+  @@id([pageId, locale])
+  @@map("page_translations")
+}

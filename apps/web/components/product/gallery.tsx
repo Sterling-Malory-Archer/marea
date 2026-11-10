@@ -42,10 +42,10 @@ export function Gallery({ images, hex, title }: { images: ProductImage[]; hex: s
               key={img.id}
               type="button"
               onClick={() => setLightbox(i)}
-              aria-label={t.product.openImage(i + 1)}
               className="relative aspect-[3/4] w-full shrink-0 snap-center"
             >
               <Frame img={img} hex={hex} sizes="100vw" priority={i === 0} />
+              <span className="sr-only">{t.product.openImage(i + 1)}</span>
             </button>
           ))}
         </div>
@@ -65,10 +65,10 @@ export function Gallery({ images, hex, title }: { images: ProductImage[]; hex: s
             <button
               type="button"
               onClick={() => setLightbox(i)}
-              aria-label={t.product.openImage(i + 1)}
               className={`relative block w-full cursor-zoom-in ${images.length % 2 === 1 && i === 0 ? "aspect-[4/5]" : "aspect-[3/4]"}`}
             >
               <Frame img={img} hex={hex} sizes="(min-width: 1024px) 30vw, 100vw" priority={i < 2} />
+              <span className="sr-only">{t.product.openImage(i + 1)}</span>
             </button>
           </li>
         ))}

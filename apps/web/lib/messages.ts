@@ -8,6 +8,7 @@ const en = {
   card: { sale: "Sale price", original: "Original price", soldOut: "Sold out", save: (t: string) => `Save ${t} to wishlist`, remove: (t: string) => `Remove ${t} from wishlist`, availableIn: (c: string) => `Available in ${c}` },
   placeholder: { image: "Placeholder image", suffix: "placeholder — photograph to come", campaign: "Placeholder — campaign photograph (4:5, min. 2400 px tall)", editorial: "Placeholder — editorial photograph", lifestyle: "Placeholder — lifestyle photograph" },
   listing: {
+    productsHeading: "Products",
     items: (n: number) => `${n} ${n === 1 ? "piece" : "pieces"}`,
     filters: "Filters", filter: "Filter", sortBy: "Sort by", clearAll: "Clear all", remove: (l: string) => `Remove filter: ${l}`,
     showResults: (n: number) => `Show ${n} ${n === 1 ? "result" : "results"}`,
@@ -47,7 +48,7 @@ const en = {
     done: "You’re subscribed. Look out for our next letter.", invalid: "Enter a valid e-mail address.", needConsent: "Tick the box to confirm you’d like our e-mails.",
     rate: "Too many attempts. Try again in a little while.", failed: "We couldn’t sign you up. Try again.", offline: "No connection. Check your internet and try again.",
   },
-  footer: { shop: "Shop", care: "Customer care", about: "About", contact: "Contact us", shipping: "Shipping", returns: "Returns & exchanges", sizeGuide: "Size guide", account: "Your account", aboutUs: "About us", journal: "Journal", privacy: "Privacy policy", terms: "Terms & conditions", rights: "All rights reserved.", payments: "Payment methods", cod: "Cash on delivery", freeDelivery: (a: string, d: number) => `Free delivery in Montenegro on orders over ${a}. Free exchanges within ${d} days.` },
+  footer: { shop: "Shop", care: "Customer care", about: "About", contact: "Contact us", shipping: "Delivery", returns: "Returns & exchanges", sizeGuide: "Size guide", account: "Your account", aboutUs: "About us", journal: "Journal", privacy: "Privacy policy", terms: "Terms of sale", rights: "All rights reserved.", payments: "Payment methods", cod: "Cash on delivery", freeDelivery: (a: string, d: number) => `Free delivery in Montenegro on orders over ${a}. Returns within ${d} days.` },
   auth: {
     signIn: "Sign in", signInTitle: "Sign in", signingIn: "Signing in…", signOut: "Sign out",
     email: "E-mail", password: "Password", forgot: "Forgotten your password?",
@@ -116,6 +117,14 @@ const en = {
     createAccount: "Create an account to follow this order and check out faster next time.", createAccountLink: "Create account", viewOrders: "View your orders", keepShopping: "Continue shopping", notFound: "We couldn’t find this order. Open the link from your confirmation e-mail.",
   },
   errors: { notFound: "Page not found", notFoundText: "This page doesn’t exist or has moved. Try the latest arrivals, or use search to find a specific piece.", seeNew: "See new arrivals", backHome: "Back to home", failed: "This page didn’t load", failedText: "We couldn’t reach the store just now. Try again in a moment.", retry: "Try again" },
+  info: {
+    help: "Customer care", helpPages: "Customer care pages", draft: "This page is being finalised. If anything is unclear, please contact us.", updated: (d: string) => `Last updated ${d}`,
+    method: "Method", price: "Price", freeFrom: "Free from", time: "Delivery time", cod: "Cash on delivery", free: "Free", yes: "Yes", no: "No",
+    days: (a: number, b: number) => (a === b ? `${a} working day${a === 1 ? "" : "s"}` : `${a}–${b} working days`), deliversTo: "Delivers to",
+    email: "E-mail", phone: "Phone", instagram: "Instagram", writeUs: "Write to us",
+    zoneNames: { Montenegro: "Montenegro", "Western Balkans": "Western Balkans" } as Record<string, string>,
+    scaleNames: { alpha: "Clothing", "it-numeric": "Clothing (Italian sizes)", waist: "Trousers and jeans", "eu-shoe": "Shoes", "one-size": "One size" } as Record<string, string>,
+  },
 };
 
 export type Messages = typeof en;
@@ -127,6 +136,7 @@ const me: Messages = {
   card: { sale: "Snižena cijena", original: "Stara cijena", soldOut: "Rasprodato", save: (t: string) => `Sačuvaj ${t} na listu želja`, remove: (t: string) => `Ukloni ${t} sa liste želja`, availableIn: (c: string) => `Dostupno u bojama: ${c}` },
   placeholder: { image: "Privremena slika", suffix: "privremena slika — fotografija stiže", campaign: "Privremena slika — fotografija kampanje (4:5, min. 2400 px visine)", editorial: "Privremena slika — editorijalna fotografija", lifestyle: "Privremena slika — lifestyle fotografija" },
   listing: {
+    productsHeading: "Proizvodi",
     items: (n: number) => `${n} ${n % 10 === 1 && n % 100 !== 11 ? "artikal" : "artikala"}`,
     filters: "Filteri", filter: "Filtriraj", sortBy: "Sortiraj", clearAll: "Obriši sve", remove: (l: string) => `Ukloni filter: ${l}`,
     showResults: (n: number) => `Prikaži rezultate (${n})`,
@@ -166,7 +176,7 @@ const me: Messages = {
     done: "Prijavljeni ste. Očekujte naše sljedeće pismo.", invalid: "Unesite ispravnu e-mail adresu.", needConsent: "Označite polje da potvrdite da želite naše e-mailove.",
     rate: "Previše pokušaja. Pokušajte ponovo malo kasnije.", failed: "Prijava nije uspjela. Pokušajte ponovo.", offline: "Nema konekcije. Provjerite internet i pokušajte ponovo.",
   },
-  footer: { shop: "Kupovina", care: "Podrška kupcima", about: "O nama", contact: "Kontakt", shipping: "Dostava", returns: "Povrat i zamjena", sizeGuide: "Tabela veličina", account: "Vaš nalog", aboutUs: "O nama", journal: "Žurnal", privacy: "Politika privatnosti", terms: "Uslovi korišćenja", rights: "Sva prava zadržana.", payments: "Načini plaćanja", cod: "Plaćanje pouzećem", freeDelivery: (a: string, d: number) => `Besplatna dostava u Crnoj Gori za porudžbine preko ${a}. Besplatna zamjena u roku od ${d} dana.` },
+  footer: { shop: "Kupovina", care: "Podrška kupcima", about: "O nama", contact: "Kontakt", shipping: "Dostava", returns: "Povraćaj i zamjena", sizeGuide: "Tabela veličina", account: "Vaš nalog", aboutUs: "O nama", journal: "Žurnal", privacy: "Politika privatnosti", terms: "Uslovi kupovine", rights: "Sva prava zadržana.", payments: "Načini plaćanja", cod: "Plaćanje pouzećem", freeDelivery: (a: string, d: number) => `Besplatna dostava u Crnoj Gori za porudžbine preko ${a}. Povraćaj u roku od ${d} dana.` },
   auth: {
     signIn: "Prijava", signInTitle: "Prijavite se", signingIn: "Prijavljivanje…", signOut: "Odjava",
     email: "E-mail", password: "Lozinka", forgot: "Zaboravili ste lozinku?",
@@ -235,6 +245,14 @@ const me: Messages = {
     createAccount: "Otvorite nalog da biste pratili ovu porudžbinu i brže kupovali sljedeći put.", createAccountLink: "Otvori nalog", viewOrders: "Vaše porudžbine", keepShopping: "Nastavi kupovinu", notFound: "Porudžbina nije pronađena. Otvorite link iz e-maila sa potvrdom.",
   },
   errors: { notFound: "Stranica nije pronađena", notFoundText: "Ova stranica ne postoji ili je premještena. Pogledajte novitete ili upotrijebite pretragu.", seeNew: "Pogledaj novo", backHome: "Nazad na početnu", failed: "Stranica se nije učitala", failedText: "Trenutno ne možemo da dođemo do prodavnice. Pokušajte ponovo za trenutak.", retry: "Pokušaj ponovo" },
+  info: {
+    help: "Podrška kupcima", helpPages: "Stranice podrške", draft: "Ova stranica je u završnoj pripremi. Ako nešto nije jasno, kontaktirajte nas.", updated: (d: string) => `Posljednja izmjena ${d}`,
+    method: "Način", price: "Cijena", freeFrom: "Besplatno od", time: "Rok dostave", cod: "Plaćanje pouzećem", free: "Besplatno", yes: "Da", no: "Ne",
+    days: (a: number, b: number) => (a === b ? `${a} radni dan` : `${a}–${b} radnih dana`), deliversTo: "Dostavljamo u",
+    email: "E-mail", phone: "Telefon", instagram: "Instagram", writeUs: "Pišite nam",
+    zoneNames: { Montenegro: "Crna Gora", "Western Balkans": "Zapadni Balkan" },
+    scaleNames: { alpha: "Odjeća", "it-numeric": "Odjeća (italijanske veličine)", waist: "Pantalone i farmerke", "eu-shoe": "Obuća", "one-size": "Univerzalna veličina" },
+  },
 };
 
 export const MESSAGES: Record<Locale, Messages> = { en, me };

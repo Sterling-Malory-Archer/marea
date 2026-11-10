@@ -6,14 +6,14 @@
 @theme {
   --color-paper: #f8f7f4;
   --color-ink: #202020;
-  --color-mute: #777777;
+  --color-mute: #6b6b6b; /* brief: #777777 — darkened slightly to meet WCAG AA (4.5:1) on paper, sand and white */
   --color-sand: #eeece7;
   --color-line: #e5e2dc;
   --color-claret: #713b43;
   --color-white: #ffffff;
 
-  --font-display: "Bodoni Moda Variable", "Bodoni 72", "Didot", Georgia, serif;
-  --font-sans: "Jost Variable", "Futura", "Helvetica Neue", Arial, sans-serif;
+  --font-display: var(--font-bodoni-ext), var(--font-bodoni), "Bodoni 72", "Didot", Georgia, serif;
+  --font-sans: var(--font-jost-ext), var(--font-jost), "Futura", "Helvetica Neue", Arial, sans-serif;
 
   /* Type scale (≈1.25 ratio for UI, display sizes fluid) */
   --text-micro: 0.6875rem;

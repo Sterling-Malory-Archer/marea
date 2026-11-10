@@ -32,7 +32,6 @@ export function Footer({ layout, locale }: { layout: Layout; locale: Locale }) {
       title: f.about,
       links: [
         { label: f.aboutUs, href: to("/about") },
-        { label: f.journal, href: to("/journal") },
         { label: f.privacy, href: to("/help/privacy") },
         { label: f.terms, href: to("/help/terms") },
       ],
