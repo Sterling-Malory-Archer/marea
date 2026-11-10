@@ -27,7 +27,7 @@ export function dashboardRouter(ctx: AppContext) {
     ]);
     const companyMissing = (["company.name", "company.address", "company.taxId", "company.registrationNo"] as const).filter((k) => !settings[k]);
     const items = [
-      { key: "company", ok: companyMissing.length === 0, label: "Company details for documents and legal pages", detail: companyMissing.length ? `Missing: ${companyMissing.map((k) => k.split(".")[1]).join(", ")}` : null, href: "/admin/settings" },
+      { key: "company", ok: companyMissing.length === 0, label: "Company details for documents and legal pages", detail: companyMissing.length ? `Missing: ${companyMissing.map((k) => ({ "company.name": "legal name", "company.address": "address", "company.taxId": "tax ID (PIB)", "company.registrationNo": "registration number" })[k]).join(", ")}` : null, href: "/admin/settings" },
       { key: "support", ok: !!settings["store.supportEmail"], label: "Customer service e-mail", detail: null, href: "/admin/settings" },
       { key: "alerts", ok: !!settings["notifications.orderEmail"], label: "New-order alert inbox", detail: null, href: "/admin/settings" },
       { key: "mail", ok: ctx.env.MAIL_DRIVER === "smtp", label: "E-mail sending (SMTP) connected", detail: ctx.env.MAIL_DRIVER === "smtp" ? null : "E-mails are only written to the server log", href: null },
