@@ -24,6 +24,7 @@ export const env = parseEnv({
   STORAGE_DRIVER: "local",
   LOCAL_STORAGE_DIR: storageDir,
   MEDIA_PUBLIC_BASE_URL: "http://localhost:4000/media",
+  INTERNAL_API_KEY: "test-internal-key-0123456789abcdefghijklmnop",
 });
 export const db = createPrismaClient(env.DATABASE_URL);
 export const storage = createStorage(env);

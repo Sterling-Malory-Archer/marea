@@ -15,6 +15,10 @@
     "db:migrate": "pnpm --filter @marea/db migrate:dev",
     "db:deploy": "pnpm --filter @marea/db migrate:deploy",
     "db:seed": "pnpm --filter @marea/db seed",
-    "db:seed:demo": "pnpm --filter @marea/db seed:demo"
+    "db:seed:demo": "pnpm --filter @marea/db seed:demo",
+    "e2e": "playwright test"
+  },
+  "devDependencies": {
+    "@playwright/test": "^1.65.0"
   }
 }

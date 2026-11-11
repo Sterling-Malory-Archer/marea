@@ -9,3 +9,6 @@ packages/db/src/generated/
 apps/api/storage/
 *.log
 .DS_Store
+e2e-results/
+e2e-report/
+*.tsbuildinfo

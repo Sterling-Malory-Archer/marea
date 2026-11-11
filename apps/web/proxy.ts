@@ -45,8 +45,12 @@ function contentSecurityPolicy(nonce: string) {
   ].join("; ");
 }
 
+const REWRITTEN = "x-marea-locale-rewrite";
+
 export function proxy(req: NextRequest) {
   const { pathname, search } = req.nextUrl;
+  // The standalone server runs the proxy again on our own internal /en rewrite; let it through.
+  if (req.headers.get(REWRITTEN) === "1" && (pathname === "/en" || pathname.startsWith("/en/"))) return NextResponse.next();
 
   const nonce = btoa(crypto.randomUUID());
   const csp = contentSecurityPolicy(nonce);
@@ -78,11 +82,12 @@ export function proxy(req: NextRequest) {
   const url = req.nextUrl.clone();
   url.pathname = `/en${pathname === "/" ? "" : pathname}`;
   url.search = search;
+  headers.set(REWRITTEN, "1");
   return finish(NextResponse.rewrite(url, { request: { headers } }));
 }
 
 export const config = {
   // Pages only: not the API/media proxies, Next internals or files with an extension.
   // (Router prefetches must pass through too — they need the locale rewrite.)
-  matcher: ["/((?!api/|media/|_next/|.*\\.[a-zA-Z0-9]+$).*)"],
+  matcher: ["/((?!api/|media/|_next/|healthz$|.*\\.[a-zA-Z0-9]+$).*)"],
 };

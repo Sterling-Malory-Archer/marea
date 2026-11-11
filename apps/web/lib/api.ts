@@ -11,7 +11,7 @@ async function get<T>(path: string, params: Record<string, string | undefined> =
   const qs = new URLSearchParams(Object.entries(params).filter((e): e is [string, string] => !!e[1])).toString();
   let res: Response;
   try {
-    res = await fetch(`${API}${path}${qs ? `?${qs}` : ""}`, { next: { revalidate }, headers: { accept: "application/json" } });
+    res = await fetch(`${API}${path}${qs ? `?${qs}` : ""}`, { next: { revalidate }, headers: { accept: "application/json", ...(process.env.INTERNAL_API_KEY ? { "x-internal-key": process.env.INTERNAL_API_KEY } : {}) } });
   } catch (err) {
     throw new ApiUnavailableError(`API unreachable at ${API}: ${(err as Error).message}`);
   }

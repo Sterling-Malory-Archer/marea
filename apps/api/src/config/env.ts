@@ -28,6 +28,12 @@ const schema = z
     S3_FORCE_PATH_STYLE: bool.default(true),
     MAIL_DRIVER: z.enum(["log", "smtp"]).default("log"),
     TRUST_PROXY_HOPS: z.coerce.number().int().min(0).max(5).default(1),
+    /// Raises every per-visitor rate limit — only for staging/CI end-to-end runs. Must be 1 in production.
+    /// Optional chat webhook for server-error alerts (Slack/Discord-compatible JSON).
+    ALERT_WEBHOOK_URL: z.url().startsWith("https://").optional().or(z.literal("").transform(() => undefined)),
+    RATE_LIMIT_MULTIPLIER: z.coerce.number().int().min(1).max(1000).default(1),
+    /// Shared with the storefront server (web) so its page renders aren't rate-limited as one visitor.
+    INTERNAL_API_KEY: z.string().min(32).optional(),
     MAIL_FROM: z.string().default("MAREA <no-reply@example.com>"),
     SMTP_HOST: z.string().default(""),
     SMTP_PORT: z.coerce.number().int().positive().default(587),
@@ -47,6 +53,10 @@ const schema = z
         ctx.addIssue({ code: "custom", path: ["STORAGE_DRIVER"], message: "Use S3-compatible storage in production" });
       if (env.MAIL_DRIVER !== "smtp")
         ctx.addIssue({ code: "custom", path: ["MAIL_DRIVER"], message: "Configure SMTP in production so verification and password-reset e-mails are delivered" });
+      if (env.RATE_LIMIT_MULTIPLIER !== 1)
+        ctx.addIssue({ code: "custom", path: ["RATE_LIMIT_MULTIPLIER"], message: "Rate limits can't be raised in production" });
+      if (!env.INTERNAL_API_KEY)
+        ctx.addIssue({ code: "custom", path: ["INTERNAL_API_KEY"], message: "Set INTERNAL_API_KEY (same value in the web app) so page renders aren't rate-limited as a single visitor" });
       if (!env.COOKIE_SECURE)
         ctx.addIssue({ code: "custom", path: ["COOKIE_SECURE"], message: "COOKIE_SECURE must be true in production (HTTPS)" });
       if (!env.MEDIA_PUBLIC_BASE_URL.startsWith("https://"))

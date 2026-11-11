@@ -6,6 +6,7 @@ import { rateLimit } from "express-rate-limit";
 import helmet from "helmet";
 import { pinoHttp } from "pino-http";
 import { trustedOrigins } from "./config/env.js";
+import { createAlerter } from "./lib/alerts.js";
 import type { AppContext } from "./context.js";
 import { loadCustomer, requireAdmin } from "./middleware/auth.js";
 import { errorHandler, notFoundHandler, originCheck } from "./middleware/http.js";
@@ -23,6 +24,7 @@ import { dashboardRouter } from "./modules/admin/dashboard.routes.js";
 import { peopleRouter } from "./modules/admin/people.routes.js";
 import { commerceRouter } from "./modules/admin/commerce.routes.js";
 import { contentRouter } from "./modules/admin/content.routes.js";
+import { limitFor } from "./lib/rate-limit.js";
 
 export function createApp(ctx: AppContext) {
   const app = express();
@@ -73,10 +75,14 @@ export function createApp(ctx: AppContext) {
   api.use(
     rateLimit({
       windowMs: 60_000,
-      limit: ctx.env.NODE_ENV === "test" ? 10_000 : 300,
+      limit: limitFor(ctx.env, 300),
       standardHeaders: "draft-8",
       legacyHeaders: false,
       message: { error: { code: "RATE_LIMITED", message: "Too many requests" } },
+      // The storefront server renders pages for every visitor from one address; it
+      // identifies itself with a private key so it isn't throttled as one "visitor".
+      // Only read-only storefront requests qualify.
+      skip: (req) => req.method === "GET" && req.path.startsWith("/store/") && isInternal(req.get("x-internal-key"), ctx.env.INTERNAL_API_KEY),
     }),
   );
   // Payment webhooks (Phase 7) authenticate by signature, not by origin.
@@ -108,6 +114,12 @@ export function createApp(ctx: AppContext) {
 
   app.use("/api", api);
   app.use(notFoundHandler);
-  app.use(errorHandler(ctx.log));
+  app.use(errorHandler(ctx.log, createAlerter(ctx.env.ALERT_WEBHOOK_URL, ctx.log, "API")));
   return app;
+}
+
+function isInternal(given: string | undefined, expected: string | undefined) {
+  if (!given || !expected) return false;
+  const a = Buffer.from(given), b = Buffer.from(expected);
+  return a.length === b.length && crypto.timingSafeEqual(a, b);
 }

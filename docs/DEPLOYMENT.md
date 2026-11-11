@@ -21,12 +21,15 @@ If any answer is "no", the code stays the same — only the hosting target chang
 
 ## 2. Release procedure
 
+The step-by-step runbook (staging, go-live, rollback, backups, monitoring) is in **[LAUNCH.md](LAUNCH.md)**.
+In short:
+
 ```bash
-pnpm install --frozen-lockfile
-pnpm build                                    # db client, API, storefront
-pnpm db:deploy                                # prisma migrate deploy — non-destructive, run once per release
-node apps/api/dist/server.js                  # API (private network only)
-pnpm --filter @marea/web start                # storefront (public, behind HTTPS)
+# images: infra/api.Dockerfile (API + migrations + seed) and infra/web.Dockerfile (storefront/admin, standalone)
+docker compose -f infra/deploy/docker-compose.yml build
+docker compose run --rm api npm run release:migrate   # prisma migrate deploy — non-destructive, every release
+docker compose up -d
+node scripts/smoke.mjs https://www.example.me          # read-only post-deploy checks
 ```
 
 `prisma migrate deploy` only applies new migrations; it never resets data. Never run `migrate dev` or

@@ -7,6 +7,7 @@ import { localeSchema } from "../../lib/i18n.js";
 import { sha256 } from "../../lib/util.js";
 import { validated } from "../../middleware/http.js";
 import { checkoutQuote, placeOrder } from "./checkout.service.js";
+import { limitFor } from "../../lib/rate-limit.js";
 
 const country = z.string().trim().length(2).transform((c) => c.toUpperCase());
 const txt = (min: number, max: number) => z.string().trim().min(min).max(max);
@@ -44,7 +45,7 @@ export function checkoutRouter(ctx: AppContext) {
   const r = Router();
   const placeLimiter = rateLimit({
     windowMs: 10 * 60_000,
-    limit: ctx.env.NODE_ENV === "test" ? 1000 : 20,
+    limit: limitFor(ctx.env, 20),
     standardHeaders: "draft-8",
     legacyHeaders: false,
     message: { error: { code: "RATE_LIMITED", message: "Too many attempts. Please wait a few minutes." } },

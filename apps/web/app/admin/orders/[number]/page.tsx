@@ -143,9 +143,9 @@ export default function OrderDetail({ params }: { params: Promise<{ number: stri
                 }}
               >
                 <select value={ship.carrier} onChange={(e) => setShip({ ...ship, carrier: e.target.value })} className={inputCls} aria-label="Carrier">{CARRIERS.map((c) => <option key={c}>{c}</option>)}</select>
-                {ship.carrier === "Other" && <input value={ship.other} onChange={(e) => setShip({ ...ship, other: e.target.value })} placeholder="Carrier name" className={inputCls} />}
-                <input value={ship.trackingNumber} onChange={(e) => setShip({ ...ship, trackingNumber: e.target.value })} placeholder="Tracking number" className={inputCls} />
-                <input value={ship.trackingUrl} onChange={(e) => setShip({ ...ship, trackingUrl: e.target.value })} placeholder="Tracking link (https://…)" className={inputCls} type="url" />
+                {ship.carrier === "Other" && <input value={ship.other} onChange={(e) => setShip({ ...ship, other: e.target.value })} placeholder="Carrier name" aria-label="Carrier name" className={inputCls} />}
+                <input value={ship.trackingNumber} onChange={(e) => setShip({ ...ship, trackingNumber: e.target.value })} placeholder="Tracking number" aria-label="Tracking number" className={inputCls} />
+                <input value={ship.trackingUrl} onChange={(e) => setShip({ ...ship, trackingUrl: e.target.value })} placeholder="Tracking link (https://…)" aria-label="Tracking link" className={inputCls} type="url" />
                 <button type="submit" disabled={busy} className={btn.primary}>{o.status === "SHIPPED" ? "Add parcel" : "Save and mark shipped"}</button>
               </form>
             </Card>

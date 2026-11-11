@@ -38,6 +38,7 @@ if (!fs.existsSync(envPath)) {
     .replace(/^DATABASE_URL=.*$/m, `DATABASE_URL="${db}/marea"`)
     .replace(/^TEST_DATABASE_URL=.*$/m, `TEST_DATABASE_URL="${db}/marea_test"`)
     .replace(/^COOKIE_SECRET=.*$/m, `COOKIE_SECRET="${crypto.randomBytes(48).toString("base64")}"`)
+    .replace(/^INTERNAL_API_KEY=.*$/m, `INTERNAL_API_KEY="${crypto.randomBytes(32).toString("base64url")}"`)
     .replace(/^SEED_ADMIN_EMAIL=.*$/m, `SEED_ADMIN_EMAIL="admin@marea.local"`)
     .replace(/^SEED_ADMIN_PASSWORD=.*$/m, `SEED_ADMIN_PASSWORD="${adminPassword}"`);
   fs.writeFileSync(envPath, `${env}\nSHADOW_DATABASE_URL="${db}/marea_shadow"\n`);

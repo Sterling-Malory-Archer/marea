@@ -11,6 +11,7 @@ import { createSession, destroySession, CUSTOMER_COOKIE } from "../auth/sessions
 import { mergeGuestCartInto } from "../cart/cart.service.js";
 import { renderEmail } from "../mail/templates.js";
 import { consumeToken, issueToken } from "./email-tokens.js";
+import { limitFor } from "../../lib/rate-limit.js";
 
 const MAX_FAILED = 8;
 const LOCK_MINUTES = 15;
@@ -51,7 +52,7 @@ export function customerAuthRouter(ctx: AppContext) {
   const r = Router();
   const strict = rateLimit({
     windowMs: 15 * 60_000,
-    limit: ctx.env.NODE_ENV === "test" ? 1000 : 20,
+    limit: limitFor(ctx.env, 20),
     standardHeaders: "draft-8",
     legacyHeaders: false,
     message: { error: { code: "RATE_LIMITED", message: "Too many attempts. Try again in a few minutes." } },

@@ -9,6 +9,7 @@ import { audit } from "../audit/audit.js";
 import { dummyVerify, verifyPassword } from "./password.js";
 import { isStaffRole, permissionsFor } from "./permissions.js";
 import { createSession, destroySession } from "./sessions.js";
+import { limitFor } from "../../lib/rate-limit.js";
 
 const MAX_FAILED = 5;
 const LOCK_MINUTES = 15;
@@ -23,7 +24,7 @@ export function adminAuthRouter(ctx: AppContext) {
 
   const loginLimiter = rateLimit({
     windowMs: 15 * 60_000,
-    limit: ctx.env.NODE_ENV === "test" ? 1000 : 20,
+    limit: limitFor(ctx.env, 20),
     standardHeaders: "draft-8",
     legacyHeaders: false,
     message: { error: { code: "RATE_LIMITED", message: "Too many login attempts. Try again later." } },

@@ -1,3 +1,4 @@
+import path from "node:path";
 import type { NextConfig } from "next";
 
 const apiUrl = process.env.API_INTERNAL_URL ?? "http://127.0.0.1:4000";
@@ -19,6 +20,8 @@ const securityHeaders = [
 
 const config: NextConfig = {
   poweredByHeader: false,
+  // Container builds (infra/web.Dockerfile) ship a self-contained server; local `next start` doesn't need it.
+  ...(process.env.NEXT_OUTPUT === "standalone" ? { output: "standalone" as const, outputFileTracingRoot: path.join(import.meta.dirname, "../..") } : {}),
   reactStrictMode: true,
   images: {
     formats: ["image/avif", "image/webp"],

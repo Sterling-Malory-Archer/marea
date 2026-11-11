@@ -50,3 +50,63 @@ jobs:
         env:
           API_INTERNAL_URL: http://127.0.0.1:4000
           NEXT_PUBLIC_SITE_URL: http://localhost:3000
+
+  e2e:
+    # Real browser journeys against the built storefront + API + MySQL with demo data.
+    needs: test
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    services:
+      mysql:
+        image: mysql:8.0
+        env:
+          MYSQL_ROOT_PASSWORD: root
+        ports: ["3306:3306"]
+        options: >-
+          --health-cmd="mysqladmin ping -h 127.0.0.1"
+          --health-interval=5s --health-retries=20
+    env:
+      NODE_ENV: development
+      DATABASE_URL: mysql://root:root@127.0.0.1:3306/marea_e2e
+      PUBLIC_WEB_URL: http://localhost:3000
+      TRUSTED_ORIGINS: http://localhost:3000
+      STORAGE_DRIVER: local
+      MEDIA_PUBLIC_BASE_URL: /media
+      COOKIE_SECRET: ci-e2e-cookie-secret-not-used-anywhere-else-012345
+      INTERNAL_API_KEY: ci-e2e-internal-key-not-used-anywhere-else-0123456
+      RATE_LIMIT_MULTIPLIER: "20"
+      SEED_ADMIN_EMAIL: owner@e2e.local
+      SEED_ADMIN_PASSWORD: E2e-owner-password-2026
+      API_INTERNAL_URL: http://127.0.0.1:4000
+      NEXT_PUBLIC_SITE_URL: http://localhost:3000
+    steps:
+      - uses: actions/checkout@v5
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v5
+        with:
+          node-version: 22
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm --filter @marea/db build
+      - name: Database with base data and demo catalogue
+        run: pnpm db:deploy && pnpm db:seed && pnpm db:seed:demo
+      - run: pnpm --filter @marea/api build
+      - name: Build storefront (standalone, as in the container image)
+        run: |
+          env -u NODE_ENV NEXT_OUTPUT=standalone pnpm --filter @marea/web build
+          cp -r apps/web/.next/static apps/web/.next/standalone/apps/web/.next/static
+          cp -r apps/web/public apps/web/.next/standalone/apps/web/public
+      - run: npx playwright install --with-deps chromium
+      - name: End-to-end tests
+        run: pnpm e2e
+        env:
+          E2E_START_SERVERS: "1"
+          E2E_WEB_COMMAND: node apps/web/.next/standalone/apps/web/server.js
+      - uses: actions/upload-artifact@v4
+        if: failure()
+        with:
+          name: e2e-report
+          path: |
+            e2e-report/
+            e2e-results/
+          retention-days: 14

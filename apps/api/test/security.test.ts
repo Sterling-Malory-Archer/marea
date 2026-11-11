@@ -1,7 +1,7 @@
 import supertest from "supertest";
 import { describe, expect, it } from "vitest";
 import { escapeHtml } from "../src/lib/html.js";
-import { app, db, ids, loginAs, mailer, ORIGIN, request, unique } from "./helpers.js";
+import { app, db, env, ids, loginAs, mailer, ORIGIN, request, unique } from "./helpers.js";
 
 describe("security review (Phase 9)", () => {
   it("requires a staff session for every admin read endpoint", async () => {
@@ -62,6 +62,19 @@ describe("security review (Phase 9)", () => {
     await admin.post("/api/admin/coupons").send({ code, type: "PERCENTAGE", value: 500 }).expect(201);
     const res = await admin.post("/api/admin/coupons").send({ code, type: "PERCENTAGE", value: 500 }).expect(409);
     expect(JSON.stringify(res.body)).not.toMatch(/_key|constraint|modelName|driverAdapter/i);
+  });
+
+  it("rate-limits visitors but not the storefront server's keyed page renders", async () => {
+    const key = env.INTERNAL_API_KEY!;
+    const visitor = await request().get("/api/store/layout").query({ locale: "en" }).expect(200);
+    expect(visitor.headers["ratelimit-policy"]).toBeDefined();
+    const internal = await request().get("/api/store/layout").query({ locale: "en" }).set("x-internal-key", key).expect(200);
+    expect(internal.headers["ratelimit-policy"]).toBeUndefined();
+    // A wrong key, or a write, is limited like any visitor.
+    const wrong = await request().get("/api/store/layout").query({ locale: "en" }).set("x-internal-key", key.replace(/.$/, "x")).expect(200);
+    expect(wrong.headers["ratelimit-policy"]).toBeDefined();
+    const write = await request().post("/api/store/newsletter").set("x-internal-key", key).send({ email: "not-an-email" });
+    expect(write.headers["ratelimit-policy"]).toBeDefined();
   });
 
   it("sends hardened headers on API responses", async () => {

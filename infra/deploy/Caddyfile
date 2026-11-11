@@ -1,0 +1,22 @@
+# Public entry point: HTTPS (certificates issued and renewed automatically),
+# HTTP → HTTPS, compression, and the visitor's IP appended to X-Forwarded-For.
+{$SITE_DOMAIN} {
+	encode zstd gzip
+	reverse_proxy web:3000 {
+		# Caddy appends the client IP to X-Forwarded-For (trusted by the API as one hop).
+		header_up X-Forwarded-Proto {scheme}
+	}
+	# Uploads go to the API through the web app; allow product photo batches.
+	request_body {
+		max_size 64MB
+	}
+	log {
+		output stdout
+		format json
+	}
+}
+
+# Redirect the bare domain to www (remove if the shop lives on the bare domain).
+# example.me {
+# 	redir https://www.example.me{uri} permanent
+# }

@@ -25,8 +25,8 @@ export function localePath(locale: Locale, path: string) {
 
 /** Strip any locale prefix from a browser path. */
 export function stripLocale(pathname: string) {
+  // Includes the default locale: some server setups report the internal /en/… rewrite as the path.
   for (const l of LOCALES) {
-    if (l === DEFAULT_LOCALE) continue;
     if (pathname === `/${l}`) return "/";
     if (pathname.startsWith(`/${l}/`)) return pathname.slice(l.length + 1);
   }

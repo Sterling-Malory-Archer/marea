@@ -19,9 +19,9 @@ FROM base AS runtime
 ENV NODE_ENV=production
 WORKDIR /app
 COPY --from=build /out ./
-# Migrations ship with the image so `migrate deploy` can run as a release step.
-COPY --from=build /app/packages/db/prisma ./prisma
-COPY --from=build /app/packages/db/prisma.config.ts ./prisma.config.ts
+# Migrations and the base seed ship inside @marea/db. Release steps (same image):
+#   docker run --rm --env-file api.env marea-api npm run release:migrate
+#   docker run --rm --env-file api.env marea-api npm run release:seed     # first launch only; idempotent
 USER node
 EXPOSE 4000
 HEALTHCHECK --interval=30s --timeout=5s CMD node -e "fetch('http://127.0.0.1:'+(process.env.API_PORT||4000)+'/health').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))"

@@ -54,7 +54,7 @@ export function notFoundHandler(req: Request, res: Response) {
   res.status(404).json({ error: { code: "NOT_FOUND", message: `No route for ${req.method} ${req.path}` } });
 }
 
-export function errorHandler(log: Logger): (err: unknown, req: Request, res: Response, next: NextFunction) => void {
+export function errorHandler(log: Logger, alert: (summary: string) => void = () => {}): (err: unknown, req: Request, res: Response, next: NextFunction) => void {
   return (err, req, res, _next) => {
     if (err instanceof ZodError) {
       res.status(422).json({
@@ -93,6 +93,8 @@ export function errorHandler(log: Logger): (err: unknown, req: Request, res: Res
       return;
     }
     log.error({ err, requestId: req.requestId, path: req.path }, "Unhandled error");
+    // Path and request id only — never request bodies or customer data in a chat channel.
+    alert(`${req.method} ${req.path} failed (${err instanceof Error ? err.name : "error"}) — request ${req.requestId}`);
     // Never leak internals to the client.
     res.status(500).json({ error: { code: "INTERNAL", message: "Something went wrong", requestId: req.requestId } });
   };

@@ -1,0 +1,73 @@
+# MAREA on a single server (staging or production).
+#
+#   cp api.env.example api.env && cp web.env.example web.env   # fill in secrets
+#   export SITE_DOMAIN=www.example.me                          # DNS must point here first
+#   docker compose up -d --build
+#   docker compose run --rm api npm run release:migrate        # every release
+#   docker compose run --rm api npm run release:seed           # first launch only (idempotent)
+#
+# Only Caddy is published to the internet (80/443, automatic HTTPS). The web and
+# API containers are reachable only on the internal network. A managed MySQL is
+# recommended (backups, point-in-time recovery); for a self-contained staging box,
+# start the bundled one with:  docker compose --profile bundled-db up -d
+x-logging: &logging
+  driver: json-file
+  options: { max-size: "20m", max-file: "10" }
+
+services:
+  caddy:
+    image: caddy:2
+    restart: unless-stopped
+    ports: ["80:80", "443:443", "443:443/udp"]
+    environment:
+      SITE_DOMAIN: ${SITE_DOMAIN:?set SITE_DOMAIN}
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy-data:/data
+      - caddy-config:/config
+    depends_on: [web]
+    logging: *logging
+
+  web:
+    build:
+      context: ../..
+      dockerfile: infra/web.Dockerfile
+      args:
+        NEXT_PUBLIC_SITE_URL: https://${SITE_DOMAIN:?set SITE_DOMAIN}
+        NEXT_PUBLIC_MEDIA_HOSTS: ${MEDIA_HOST:-}
+        API_INTERNAL_URL: http://api:4000
+    restart: unless-stopped
+    env_file: web.env
+    depends_on: [api]
+    logging: *logging
+
+  api:
+    build:
+      context: ../..
+      dockerfile: infra/api.Dockerfile
+    restart: unless-stopped
+    env_file: api.env
+    logging: *logging
+    # Two proxies append to X-Forwarded-For before the API? No: Caddy appends once and
+    # Next.js passes it through, so TRUST_PROXY_HOPS=1 (see docs/DEPLOYMENT.md §4).
+
+  mysql:
+    profiles: ["bundled-db"]
+    image: mysql:8.4
+    restart: unless-stopped
+    environment:
+      MYSQL_DATABASE: marea
+      MYSQL_USER: marea
+      MYSQL_PASSWORD: ${MYSQL_PASSWORD:?set MYSQL_PASSWORD}
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD:?set MYSQL_ROOT_PASSWORD}
+    command: ["--character-set-server=utf8mb4", "--collation-server=utf8mb4_0900_ai_ci", "--default-time-zone=+00:00"]
+    volumes: [mysql-data:/var/lib/mysql]
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "127.0.0.1"]
+      interval: 10s
+      retries: 10
+
+volumes:
+  caddy-data:
+  caddy-config:
+  mysql-data:

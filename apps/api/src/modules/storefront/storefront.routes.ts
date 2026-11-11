@@ -12,6 +12,7 @@ import { getProductDetail } from "../catalog/product-detail.service.js";
 import { productCardInclude, toProductCard } from "../catalog/product-card.js";
 import { getSettings } from "../settings/settings.js";
 import { loadPage, pageSlug } from "../pages/pages.js";
+import { limitFor } from "../../lib/rate-limit.js";
 
 const activeWindow = (now: Date) => ({
   isActive: true,
@@ -233,7 +234,7 @@ export function storefrontRouter(ctx: AppContext) {
   // ───────────── Newsletter ─────────────
   const newsletterLimiter = rateLimit({
     windowMs: 60 * 60_000,
-    limit: ctx.env.NODE_ENV === "test" ? 1000 : 10,
+    limit: limitFor(ctx.env, 10),
     standardHeaders: "draft-8",
     legacyHeaders: false,
     message: { error: { code: "RATE_LIMITED", message: "Too many attempts. Please try again later." } },

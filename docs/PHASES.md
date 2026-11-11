@@ -11,7 +11,7 @@
 | 7 | Payment provider + webhooks | ⏸ Deferred — waiting for the merchant decision (see below) |
 | 8 | Admin dashboard UI, e-mails, shipping | ✅ Done |
 | 9 | SEO, performance, security hardening, responsive QA | ✅ Done |
-| 10 | End-to-end tests, staging, launch | |
+| 10 | End-to-end tests, staging, launch | ✅ Built and tested — go-live waits for hosting ([LAUNCH.md](LAUNCH.md)) |
 
 ## Phase 1 — acceptance
 
@@ -113,6 +113,23 @@
 - [x] **Launch checklist** on the admin dashboard: company details, support and alert e-mails, SMTP connected, draft pages, real products, placeholder photos, demo data — disappears when everything is done.
 - [x] Cookies: only strictly necessary cookies (session, bag, language) — no consent banner needed today; the privacy page lists them. A consent banner is required before adding analytics or advertising tags.
 - [x] 105 API tests in random order; end-to-end browser runs (checkout EN/ME/member, full admin product flow) with no CSP violations.
+
+## Phase 10 — acceptance
+
+- [x] **Browser journey tests** (Playwright, `pnpm e2e`, 15 tests): browsing, sorting, search, language switch, information pages, 404, robots/sitemap/metadata/security headers; guest checkout → admin ships (tracking) and delivers; discount code created in the admin used in the bag; register → wishlist → checkout → order and address in the account → sign out; wrong password; Montenegrin checkout on a phone; admin creates a product with sizes, stock and a photo, publishes it, sees it in both languages, deletes it; every admin screen loads. Stable over repeated runs; run in CI on every push against the **standalone production build** with a fresh database.
+- [x] **Production containers**: `infra/web.Dockerfile` (self-contained Next.js server, non-root, health check) and `infra/api.Dockerfile` (now ships the migration and base-seed tooling: `npm run release:migrate`, `npm run release:seed`). Both bundles were built and run here; Docker itself isn't available in this sandbox, so the first real `docker build` happens on staging.
+- [x] **Single-server deployment bundle** (`infra/deploy/`): Caddy with automatic HTTPS and correct `X-Forwarded-For`, web + API on a private network, optional bundled MySQL for staging, log rotation, env templates.
+- [x] **Health checks**: `/healthz` on the storefront (reports API reachability) and `/health` on the API.
+- [x] **Backups**: `scripts/backup-db.sh` (consistent dump, checksum, optional S3 upload, retention) and `scripts/restore-db.sh` (checksum verification, refuses to overwrite without `--replace` + typed confirmation). Restore drill run here: row counts identical; a tampered file is rejected; passwords never appear in the process list.
+- [x] **Monitoring**: optional `ALERT_WEBHOOK_URL` posts server errors (API and storefront rendering) to a team chat, throttled to one per minute, without customer data; JSON logs with request ids.
+- [x] **Post-deploy smoke test**: `node scripts/smoke.mjs <url> [--staging]` — 12 read-only checks (health, security headers, HTTPS redirect, both languages, canonical redirects, robots/sitemap on the right domain, product structured data, information pages, 404, API, admin privacy, asset caching).
+- [x] **Launch runbook** (`docs/LAUNCH.md`): prerequisites, staging, manual checks, go-live, rollback, backups and restore drill, monitoring, routine maintenance.
+- [x] Fixes found in this phase:
+  - **Rate limiting would have throttled the whole shop**: the storefront server renders pages for all visitors from one address, so they shared one limit (300 requests/min). The storefront now identifies itself with a private key (`INTERNAL_API_KEY`, required in production) and only visitors' own requests are limited.
+  - Two bugs that only appear in the standalone server (used in production): a redirect loop on English pages and the language switch linking to `/me/en/…`.
+  - Prisma CLI moved to runtime dependencies so migrations can run from the production image.
+  - Rate limits made configurable for test runs (`RATE_LIMIT_MULTIPLIER`, refused in production).
+- [ ] **Go-live** — needs the hosting, domain, SMTP and S3 (LAUNCH.md §0).
 
 ## Owner actions before launch
 
